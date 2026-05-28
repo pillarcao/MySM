@@ -1,10 +1,7 @@
 package com.sm.controller;
 
-import com.sm.exception.ValidationException;
 import com.sm.service.DynamicCrudService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,10 +52,4 @@ public class DynamicCrudController {
         return "OK";
     }
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(ValidationException ex) {
-        Map<String, String> body = new java.util.HashMap<>();
-        body.put("error", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
-    }
 }

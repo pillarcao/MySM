@@ -5,18 +5,13 @@
       <el-header class="top-header">
         <span class="logo">SM System</span>
         <el-menu mode="horizontal" class="top-menu" background-color="#001529" text-color="rgba(255,255,255,0.7)" @select="onMenuSelect" :key="'menu_' + tables.length">
-          <template v-for="menu in menuTree" :key="menu.label">
-            <el-sub-menu :index="menu.label">
-              <template #title>{{ menu.label }}</template>
-              <template v-for="sub in menu.children" :key="sub.label">
-                <el-sub-menu v-if="sub.children" :index="sub.label">
-                  <template #title>{{ sub.label }}</template>
-                  <el-menu-item v-for="item in sub.children" :key="item.tableId" :index="item.tableId">{{ item.label }}</el-menu-item>
-                </el-sub-menu>
-                <el-menu-item v-else :index="sub.tableId">{{ sub.label }}</el-menu-item>
-              </template>
+          <el-sub-menu index="File">
+            <template #title>File</template>
+            <el-sub-menu v-for="grp in menuFlat" :key="grp.label" :index="grp.label">
+              <template #title>{{ grp.label }}</template>
+              <el-menu-item v-for="t in grp.children" :key="t.tableId" :index="t.tableId">{{ t.label }}</el-menu-item>
             </el-sub-menu>
-          </template>
+          </el-sub-menu>
         </el-menu>
         <el-button size="small" class="logout-btn" @click="handleLogout">退出</el-button>
       </el-header>
@@ -55,6 +50,7 @@
 <script setup>
 import { ref, onMounted, computed, provide, reactive } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import LoginView from './components/LoginView.vue'
 import RecordDetail from './components/RecordDetail.vue'
 import RecordList from './components/RecordList.vue'
@@ -80,7 +76,7 @@ const toolbar = reactive({
 })
 provide('toolbar', toolbar)
 
-const menuTree = computed(() => {
+const menuFlat = computed(() => {
   const groups = {}
   ;(tables.value || []).forEach(t => {
     const g = t.menuGroup || 'Others'
@@ -88,10 +84,22 @@ const menuTree = computed(() => {
     groups[g].push({ label: t.usTitle || t.jpTitle || t.tableId.replace('TBLID_B',''), tableId: t.tableId })
   })
   const order = ['Route','Product','Measurement','ProcessData','Equipment','Stocker','Cassette','User','Stage','Compile','Others']
-  return [{ label: 'File', children: order.filter(g => groups[g]).map(g => ({ label: g, children: groups[g] })) }]
+  return order.filter(g => groups[g]).map(g => ({ label: g, children: groups[g] }))
 })
 
-const fetchTables = async () => { try { tables.value = (await axios.get('/api/meta/tables')).data } catch(e) {} }
+const fetchTables = async () => {
+  try {
+    tables.value = (await axios.get('/api/meta/tables')).data
+  } catch(e) {
+    console.error('fetchTables failed:', e)
+    if (e.response && e.response.status === 403) {
+      ElMessage.error('登录已过期，请重新登录')
+      handleLogout()
+    } else {
+      ElMessage.error('加载表列表失败')
+    }
+  }
+}
 const onLoginSuccess = () => { isLoggedIn.value = true; fetchTables().then(() => { if (tables.value[0]) { const t = tables.value[0]; openTable(t.tableId, t.usTitle || t.jpTitle || t.tableId) } }) }
 const handleLogout = () => { localStorage.removeItem('sm_token'); delete axios.defaults.headers.common['Authorization']; isLoggedIn.value = false }
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }

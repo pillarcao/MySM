@@ -11,7 +11,7 @@ import java.util.Date;
 public class JwtUtil {
 
     private static final String SECRET = "sm-poc-secret-key-2026";
-    private static final long EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24小时
+    private static final long EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L; // 7天
 
     public String generateToken(String username) {
         return Jwts.builder()
