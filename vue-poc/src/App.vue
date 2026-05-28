@@ -4,7 +4,7 @@
     <div v-else class="layout">
       <el-header class="top-header">
         <span class="logo">SM System</span>
-        <el-menu mode="horizontal" class="top-menu" background-color="#001529" text-color="rgba(255,255,255,0.7)" @select="onMenuSelect">
+        <el-menu mode="horizontal" class="top-menu" background-color="#001529" text-color="rgba(255,255,255,0.7)" @select="onMenuSelect" :key="'menu_' + tables.length">
           <template v-for="menu in menuTree" :key="menu.label">
             <el-sub-menu :index="menu.label">
               <template #title>{{ menu.label }}</template>

@@ -93,9 +93,20 @@ public class ValidationService {
                     break;
 
                 case "STRING":
+                    // Skip if field not in data (control fields not sent by frontend)
+                    if (!data.containsKey(fieldName)) break;
                     Object strVal = data.get(fieldName);
                     String expect = check.getExpectValue();
                     if (strVal == null || !strVal.toString().trim().equals(expect)) {
+                        throw new ValidationException(errMsg);
+                    }
+                    break;
+
+                case "NULLCHK":
+                    // Skip if field not in data
+                    if (!data.containsKey(fieldName)) break;
+                    Object nv = data.get(fieldName);
+                    if (nv != null && !nv.toString().trim().isEmpty()) {
                         throw new ValidationException(errMsg);
                     }
                     break;

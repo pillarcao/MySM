@@ -25,12 +25,20 @@
               />
             </div>
             <el-button
+              v-if="f.refTableId && record[f.fieldName]"
+              size="small"
+              class="ref-btn"
+              title="Jump to referenced table"
+              @click="jumpToRef(f)"
+            >→</el-button>
+            <el-button
               v-if="f.refTableId"
               size="small"
               class="ref-btn"
+              title="Select from reference"
               @click="openRefPicker(f)"
-            >...</el-button>
-            <span v-else class="ref-placeholder"></span>
+            >…</el-button>
+            <span v-else-if="!f.refTableId" class="ref-placeholder"></span>
           </div>
         </div>
         <div class="drilldown-section" v-if="drillTargets.length > 0">
@@ -90,6 +98,13 @@ const fetchDrills = async () => {
   catch(e) { drillTargets.value = [] }
 }
 watch(() => props.tableId, fetchDrills, { immediate: true })
+
+const jumpToRef = (f) => {
+  if (!props.record || !props.record[f.fieldName]) return
+  const query = {}
+  query[f.refFieldName || f.fieldName] = (props.record[f.fieldName] || '').toString().trim()
+  emit('drill-down', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query })
+}
 
 const drillDown = (dd) => {
   if (!props.record) return

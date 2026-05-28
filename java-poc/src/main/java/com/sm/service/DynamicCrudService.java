@@ -113,12 +113,7 @@ public class DynamicCrudService {
         String where = buildWhere(keyFields);
         List<Object> keyValues = buildValues(keyFields, dbData);
 
-        // B 表主键含 REL_FLG，固定按 'N' 判断
-        if (tableName.startsWith("B")) {
-            where += " AND \"REL_FLG\" = ?";
-            keyValues.add("N");
-        }
-
+        // Delete: validateForDelete already checked STAT_Y, no need to filter REL_FLG
         String sql = "DELETE FROM " + tableName + " WHERE " + where;
         jdbcTemplate.update(sql, keyValues.toArray());
     }
