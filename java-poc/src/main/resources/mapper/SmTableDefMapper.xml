@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sm.mapper.SmTableDefMapper">
+    <resultMap id="BaseResultMap" type="com.sm.entity.SmTableDef">
+        <id column="TABLE_ID" property="tableId"/>
+        <result column="TABLE_NAME" property="tableName"/>
+        <result column="JP_TITLE" property="jpTitle"/>
+        <result column="US_TITLE" property="usTitle"/>
+        <result column="RELEASE_FLAG" property="releaseFlag"/>
+        <result column="DISTRIBUTE_FLAG" property="distributeFlag"/>
+        <result column="PERMISSION_TYPE" property="permissionType"/>
+        <result column="SCHEMA_TYPE" property="schemaType"/>
+        <result column="HAS_DUMMY" property="hasDummy"/>
+        <result column="SORT_NO" property="sortNo"/>
+        <result column="MENU_GROUP" property="menuGroup"/>
+        <result column="CRE_DATE" property="creDate"/>
+        <result column="CRE_USER" property="creUser"/>
+    </resultMap>
+
+    <select id="findByTableId" resultMap="BaseResultMap">
+        SELECT * FROM SM_TABLE_DEF WHERE TABLE_ID = #{tableId}
+    </select>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT * FROM SM_TABLE_DEF ORDER BY SORT_NO
+    </select>
+</mapper>

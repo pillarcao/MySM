@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sm.mapper.BCodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.sm.entity.BCode">
+        <id column="CODE_CAT" property="codeCat"/>
+        <id column="CODE_ID" property="codeId"/>
+        <id column="REL_FLG" property="relFlg"/>
+        <result column="CODE_NAME" property="codeName"/>
+        <result column="CODE_DESC" property="codeDesc"/>
+        <result column="COMP_FLG" property="compFlg"/>
+        <result column="CRE_DATE" property="creDate"/>
+        <result column="CRE_USER" property="creUser"/>
+        <result column="LAST_DATE1" property="lastDate1"/>
+        <result column="LAST_ACT1" property="lastAct1"/>
+        <result column="LAST_USER1" property="lastUser1"/>
+        <result column="LAST_DATE2" property="lastDate2"/>
+        <result column="LAST_ACT2" property="lastAct2"/>
+        <result column="LAST_USER2" property="lastUser2"/>
+        <result column="LAST_DATE3" property="lastDate3"/>
+        <result column="LAST_ACT3" property="lastAct3"/>
+        <result column="LAST_USER3" property="lastUser3"/>
+        <result column="LAST_DATE4" property="lastDate4"/>
+        <result column="LAST_ACT4" property="lastAct4"/>
+        <result column="LAST_USER4" property="lastUser4"/>
+        <result column="LAST_DATE5" property="lastDate5"/>
+        <result column="LAST_ACT5" property="lastAct5"/>
+        <result column="LAST_USER5" property="lastUser5"/>
+        <result column="OWNER" property="owner"/>
+        <result column="OWNERG" property="ownerg"/>
+        <result column="PERMISSION" property="permission"/>
+        <result column="LOCK_USER" property="lockUser"/>
+        <result column="LOCK_TIME" property="lockTime"/>
+        <result column="COMMENT" property="comment"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT * FROM BCODE
+    </select>
+
+    <select id="findByRelFlg" resultMap="BaseResultMap">
+        SELECT * FROM BCODE WHERE REL_FLG = #{relFlg}
+    </select>
+
+    <select id="findByKey" resultMap="BaseResultMap">
+        SELECT * FROM BCODE
+        WHERE CODE_CAT = #{codeCat}
+          AND CODE_ID = #{codeId}
+          AND REL_FLG = #{relFlg}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO BCODE (
+            CODE_CAT, CODE_ID, CODE_NAME, CODE_DESC,
+            REL_FLG, COMP_FLG, CRE_DATE, CRE_USER,
+            OWNER, OWNERG, PERMISSION, LOCK_USER, "COMMENT"
+        ) VALUES (
+            #{codeCat}, #{codeId}, #{codeName}, #{codeDesc},
+            COALESCE(#{relFlg}, 'E'), COALESCE(#{compFlg}, '0'), CURRENT_TIMESTAMP, COALESCE(#{creUser}, 'SYSTEM'),
+            COALESCE(#{owner}, 'SYSTEM'), COALESCE(#{ownerg}, ''), COALESCE(#{permission}, 'PUBLIC    '),
+            COALESCE(#{lockUser}, ''), COALESCE(#{comment}, '')
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE BCODE
+        SET CODE_NAME = #{codeName},
+            CODE_DESC = #{codeDesc},
+            LAST_DATE1 = CURRENT_TIMESTAMP,
+            LAST_ACT1 = 'UPDATE',
+            LAST_USER1 = COALESCE(#{lastUser1}, 'SYSTEM')
+        WHERE CODE_CAT = #{codeCat}
+          AND CODE_ID = #{codeId}
+          AND REL_FLG = #{relFlg}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM BCODE
+        WHERE CODE_CAT = #{codeCat}
+          AND CODE_ID = #{codeId}
+          AND REL_FLG = #{relFlg}
+    </delete>
+
+</mapper>

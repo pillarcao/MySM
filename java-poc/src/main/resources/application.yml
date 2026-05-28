@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:sm_db;DB_CLOSE_DELAY=-1;MODE=DB2
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sm.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8080

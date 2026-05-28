@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sm.mapper.SmFieldDefMapper">
+    <resultMap id="BaseResultMap" type="com.sm.entity.SmFieldDef">
+        <id column="ID" property="id"/>
+        <result column="TABLE_ID" property="tableId"/>
+        <result column="FIELD_NAME" property="fieldName"/>
+        <result column="JP_TITLE" property="jpTitle"/>
+        <result column="US_TITLE" property="usTitle"/>
+        <result column="DB_TYPE" property="dbType"/>
+        <result column="DB_LENGTH" property="dbLength"/>
+        <result column="IS_KEY" property="isKey"/>
+        <result column="NOT_BLANK" property="notBlank"/>
+        <result column="IS_DUMMY" property="isDummy"/>
+        <result column="IS_SEARCH_ITEM" property="isSearchItem"/>
+        <result column="SORT_NO" property="sortNo"/>
+        <result column="TREE_LEVEL" property="treeLevel"/>
+        <result column="SHEET_NO" property="sheetNo"/>
+        <result column="PAGE_NO" property="pageNo"/>
+        <result column="PROPERTY_NO" property="propertyNo"/>
+        <result column="IS_AUTO" property="isAuto"/>
+        <result column="IS_MANDATORY" property="isMandatory"/>
+        <result column="SYSTEM_READONLY" property="systemReadonly"/>
+        <result column="FIELD_TYPE" property="fieldType"/>
+        <result column="FIELD_LENGTH" property="fieldLength"/>
+        <result column="INPUT_ALPHABET" property="inputAlphabet"/>
+        <result column="INPUT_MULTIBYTE" property="inputMultibyte"/>
+        <result column="INPUT_NUMERIC" property="inputNumeric"/>
+        <result column="INPUT_SYMBOL" property="inputSymbol"/>
+        <result column="INPUT_UPPERCASE" property="inputUppercase"/>
+        <result column="RETRIEVAL_TABLE" property="retrievalTable"/>
+        <result column="FORMAT" property="format"/>
+        <result column="DEFAULT_VALUE" property="defaultValue"/>
+        <result column="MIN_VALUE" property="minValue"/>
+        <result column="MAX_VALUE" property="maxValue"/>
+        <result column="CALENDAR_BUTTON" property="calendarButton"/>
+        <result column="JUMP_BUTTON" property="jumpButton"/>
+        <result column="OPEN_BUTTON" property="openButton"/>
+        <result column="REF_TABLE_ID" property="refTableId"/>
+        <result column="REF_FIELD_NAME" property="refFieldName"/>
+        <result column="SPECIAL_BUTTON" property="specialButton"/>
+        <result column="CRE_DATE" property="creDate"/>
+        <result column="CRE_USER" property="creUser"/>
+    </resultMap>
+
+    <select id="findByTableId" resultMap="BaseResultMap">
+        SELECT * FROM SM_FIELD_DEF WHERE TABLE_ID = #{tableId} ORDER BY SORT_NO, PROPERTY_NO
+    </select>
+</mapper>

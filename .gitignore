@@ -1,0 +1,10 @@
+.DS_Store
+.claude/
+node_modules/
+dist/
+target/
+*.log
+Initial_Data/
+Wafer_SMClient/
+Wafer_SMServer/
+WV-MMDBD_20241223_LS2.ddl

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sm.mapper.SmDrillDefMapper">
+    <resultMap id="BaseResultMap" type="com.sm.entity.SmDrillDef">
+        <id column="ID" property="id"/>
+        <result column="SOURCE_TABLE_ID" property="sourceTableId"/>
+        <result column="TARGET_TABLE_ID" property="targetTableId"/>
+        <result column="LABEL" property="label"/>
+        <result column="SORT_NO" property="sortNo"/>
+    </resultMap>
+
+    <select id="findBySourceTableId" resultMap="BaseResultMap">
+        SELECT * FROM SM_DRILL_DEF WHERE SOURCE_TABLE_ID = #{sourceTableId} ORDER BY SORT_NO
+    </select>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT * FROM SM_DRILL_DEF ORDER BY SOURCE_TABLE_ID, SORT_NO
+    </select>
+</mapper>
