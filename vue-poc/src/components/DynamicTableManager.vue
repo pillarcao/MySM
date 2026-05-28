@@ -51,11 +51,18 @@
               />
               <span v-else class="cell-text">{{ formatCell(row[col.fieldName]) }}</span>
               <el-button
+                v-if="col.refTableId && col.jumpButton === 'Y' && formatCell(row[col.fieldName])"
+                size="small"
+                class="cell-ref-btn"
+                title="Jump to referenced table"
+                @click.stop="cellJump(col, row)"
+              >→</el-button>
+              <el-button
                 v-if="col.refTableId && (col === displayColumns[0] || row === editingRow)"
                 size="small"
                 class="cell-ref-btn"
                 @click.stop="openRefPicker(col, row)"
-              >...</el-button>
+              >…</el-button>
             </div>
           </template>
         </el-table-column>
@@ -80,7 +87,7 @@ import RefPicker from './RefPicker.vue'
 import SearchDialog from './SearchDialog.vue'
 
 const props = defineProps({ tableId: { type: String, required: true }, drillQuery: { type: Object, default: () => ({}) }, showSearch: { type: Boolean, default: true } })
-const emit = defineEmits(['row-select', 'records-change', 'edit-state', 'searched'])
+const emit = defineEmits(['row-select', 'records-change', 'edit-state', 'searched', 'cell-jump'])
 const toolbar = inject('toolbar')
 const selectedLeftKey = inject('selectedLeftKey', ref(null))
 const tableRef = ref(null)
@@ -258,6 +265,12 @@ const handleDelete = async () => {
     await axios.post(`/api/dynamic/${props.tableId}/delete`, currentRow.value)
     ElMessage.success('删除成功'); doSearch()
   } catch (err) { if (err!=='cancel') ElMessage.error('删除失败: '+(err.response?.data?.error||err.message)) }
+}
+
+const cellJump = (f, row) => {
+  const query = {}
+  query[f.refFieldName || f.fieldName] = (row[f.fieldName] || '').toString().trim()
+  emit('cell-jump', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query })
 }
 
 const openRefPicker = (f, row) => {

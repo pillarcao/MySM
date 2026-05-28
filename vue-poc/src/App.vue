@@ -36,7 +36,7 @@
               <span>{{ tab.title }}</span><span class="tab-close" @click.stop="closeTab(tab.tableId)">×</span>
             </div>
           </div>
-          <DynamicTableManager v-if="activeTabId" :key="activeTabId" :table-id="activeTabId" :drill-query="drillQueries[activeTabId] || {}" :show-search="!tabInitialized[activeTabId]" @row-select="onRowSelect" @records-change="onRecordsChange" @edit-state="onEditState" @searched="onTabSearched(activeTabId)" />
+          <DynamicTableManager v-if="activeTabId" :key="activeTabId" :table-id="activeTabId" :drill-query="drillQueries[activeTabId] || {}" :show-search="!tabInitialized[activeTabId]" @row-select="onRowSelect" @records-change="onRecordsChange" @edit-state="onEditState" @searched="onTabSearched(activeTabId)" @cell-jump="onDrillDown" />
           <div v-else class="empty-center">Select a table from the File menu</div>
         </div>
         <div class="right-panel">

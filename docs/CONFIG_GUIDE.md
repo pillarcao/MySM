@@ -307,27 +307,84 @@ INSERT INTO SM_CHECK_DEF VALUES ('TBLID_XXX','EDITCOMP',4,'COMP_N',NULL,NULL,NUL
 
 ## 菜单配置 (MENU_GROUP)
 
-在 `SM_TABLE_DEF` 中设置 `MENU_GROUP` 即可将表归入对应的菜单分组：
+### 原理
 
-```sql
-UPDATE SM_TABLE_DEF SET MENU_GROUP = 'Route' WHERE TABLE_ID = 'TBLID_BROUTE';
+前端 `App.vue` 从 `/api/meta/tables` 读取所有表，按 `menuGroup` 字段分组，渲染为 `File` 菜单下的二级子菜单：
+
+```
+File
+├── Route       → 所有 MENU_GROUP='Route' 的表
+├── Product     → 所有 MENU_GROUP='Product' 的表
+├── Equipment   → ...
+├── User        → ...
+├── Others      → 默认分组（未配置或空字符串归入）
+└── ...
 ```
 
-当前菜单分组：
+### 配置方式
 
-| MENU_GROUP | 说明 |
-|------------|------|
-| Route | 工艺路线相关表 |
-| Product | 产品相关表 |
-| Equipment | 设备相关表 |
-| Measurement | 测量相关表 |
-| ProcessData | 过程数据相关表 |
-| Stocker | 库存相关表 |
-| Cassette | 卡匣相关表 |
-| User | 用户相关表 |
-| Stage | 阶段相关表 |
-| Compile | 编译相关表 |
-| Others | 其他（默认分组） |
+修改 `SM_TABLE_DEF` 的 `MENU_GROUP` 列即可。无需重启前端，下次打开菜单自动生效。
+
+```sql
+-- 将表归入指定分组
+UPDATE SM_TABLE_DEF SET MENU_GROUP = 'Route' WHERE TABLE_ID = 'TBLID_BROUTE';
+
+-- 从菜单中隐藏（设为空或 NULL，同时不在任何分组中）
+UPDATE SM_TABLE_DEF SET MENU_GROUP = '' WHERE TABLE_ID = 'TBLID_BXXX';
+```
+
+### 当前分组列表
+
+| MENU_GROUP | 显示名称 | 包含的表（示例） | 说明 |
+|------------|---------|-----------------|------|
+| Route | Route | BROUTE, BMROUTE, BOPE, BROUTECNCT | 工艺路线相关 |
+| Product | Product | BPROD, BPRODCODE, BRECIP_LOOKUP | 产品相关 |
+| Equipment | Equipment | BEQPG, BEQP, BAREA, BEQP_RECIP | 设备相关 |
+| Measurement | Measurement | BMEAS_LOOKUP, BMEAS_ID, BMEAS_ITEM | 测量相关 |
+| ProcessData | ProcessData | BPROCDATA_LOOKUP, BPROCDATA_ID | 过程数据 |
+| Stocker | Stocker | BSTK, BSTKOUTLET, BEMPCAR_SC | 库存相关 |
+| Cassette | Cassette | BCARG, BCARTYPE | 卡匣相关 |
+| User | User | BUSER, BUSERG, BUSERG_FUNC | 用户相关 |
+| Stage | Stage | BSTG, BSTGG | 阶段相关 |
+| Compile | Compile | BCMPL_MODE, BCMPL_DEST_TYPE | 编译相关 |
+| Others | Others | BCODE, BCALND, BHOLDCODE 等 | 其他（默认） |
+
+### 新增表时配置菜单
+
+```sql
+-- Step 1: 插入表定义时直接指定 MENU_GROUP
+INSERT INTO SM_TABLE_DEF (TABLE_ID, TABLE_NAME, JP_TITLE, US_TITLE, SORT_NO, MENU_GROUP)
+VALUES ('TBLID_BXXXX', 'BXXXX', '新表', 'NewTable', 500, 'Others');
+
+-- Step 2: 如果忘记设置，后续可 UPDATE
+UPDATE SM_TABLE_DEF SET MENU_GROUP = 'Others' WHERE TABLE_ID = 'TBLID_BXXXX';
+```
+
+### 新增/修改分组
+
+分组名称在前端 `App.vue` 的 `menuGroups` 数组中定义。要新增分组需同时修改前后端：
+
+**1. 后端（data.sql）：**
+```sql
+UPDATE SM_TABLE_DEF SET MENU_GROUP = 'NewGroup' WHERE TABLE_ID IN ('TBLID_BXXX', 'TBLID_BYYY');
+```
+
+**2. 前端（App.vue `menuGroups` 数组）：**
+```javascript
+const menuGroups = ['Route','Product','Equipment','Measurement','ProcessData',
+  'Stocker','Cassette','User','Stage','Compile','Others', 'NewGroup']  // 追加
+```
+
+> 注意：分组显示顺序由 `menuGroups` 数组决定，不在数组中的 `MENU_GROUP` 值不会出现在菜单中。
+
+### 菜单不显示排查
+
+| 现象 | 可能原因 | 解决 |
+|------|---------|------|
+| 整个 File 菜单为空 | Token 过期，fetchTables 失败 | 重新登录 |
+| 某个分组为空 | 该分组下无任何表的 MENU_GROUP 匹配 | 检查是否有表配置了该 MENU_GROUP |
+| 某张表不在菜单中 | MENU_GROUP 为空或 NULL | 设置为有效分组名 |
+| 表出现在 Others | MENU_GROUP 值不在 menuGroups 数组中 | 更正 MENU_GROUP 值为已注册的分组名 |
 
 ---
 
@@ -461,33 +518,104 @@ INSERT INTO SM_DRILL_DEF VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related', 1);
 
 ### 工具栏按钮
 
-| 按钮 | 快捷键 | 前置条件 | 功能 |
-|------|--------|---------|------|
-| 新增 | - | 无 | 在表格顶部插入空白行，进入编辑模式 |
-| Update | - | 需选中一行 | 切换编辑模式（已发布记录→编辑中，COMP_FLG=N, REL_FLG=N） |
-| 保存 | - | 编辑模式 | 保存当前编辑的行的数据 |
-| 编辑完成 | - | 选中REL=N的行 | COMP_FLG → Y |
-| Release | - | 选中REL=N的行 | 发布到D表，REL_FLG → Y，COMP_FLG → Y |
-| 删除 | - | 选中REL=Y的行 | 删除记录 |
-| Undo | - | 新增行未保存 | 撤销新增，移除空白行 |
-
-### 右侧面板按钮
-
-| 按钮 | 显示条件 | 功能 |
+| 按钮 | 前置条件 | 功能 |
 |------|---------|------|
-| `→` (Jump) | `REF_TABLE_ID` 非空 且 字段有值 | 跳转到参照表，按 `REF_FIELD_NAME`=当前值过滤 |
-| `…` (Select) | `REF_TABLE_ID` 非空 | 打开 RefPicker 从参照表选择值回填 |
-| Related 按钮 | `SM_DRILL_DEF` 配置 | 下钻到关联表，传递所有主键字段 |
+| 新增 | 无 | 表格顶部插入空白行，进入编辑模式 |
+| Update | 需选中一行 | 切换编辑模式（已发布→编辑中，COMP_FLG='N', REL_FLG='N'） |
+| 保存 | 编辑模式 | 保存当前编辑行到数据库 |
+| 编辑完成 | 选中 REL_FLG='N' 的行 | COMP_FLG → 'Y' |
+| Release | 选中 REL_FLG='N' 的行 | 发布到 D 表，REL_FLG='Y', COMP_FLG='Y' |
+| 删除 | 选中 REL_FLG='Y' 的行 | 删除记录 |
+| Undo | 新增行未保存 | 撤销新增，移除空白行 |
 
-### 旧系统按钮对照
+### 字段级按钮（表格单元格 + 右侧面板）
 
-| 旧系统 | 新系统 | 说明 |
-|--------|--------|------|
-| Jump (J) | `→` 按钮 | 字段级跳转，打开参照表 |
-| Open (O) | 新标签页打开 | 把字段值作为URL打开（OPEN_BUTTON=1） |
-| Calendar (C) | 日期选择器 | CALENDAR_BUTTON='Y' 时显示 |
-| More (M) | - | 长文本编辑器（未实现） |
+#### → Jump（跳转按钮）
+
+| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
+|---------|---------|---------|---------|
+| `REF_TABLE_ID` 非空 + `JUMP_BUTTON='Y'` | **表格单元格** | 字段值非空 | 打开参照表，按 `REF_FIELD_NAME`=当前值过滤 |
+| `REF_TABLE_ID` 非空（字段有值） | **右侧面板** | 字段值非空 | 同上 |
+
+**实现逻辑：**
+```
+1. 取当前字段的值作为查询条件
+2. 查询字段名 = REF_FIELD_NAME（如果为空则用当前字段名）
+3. 打开 TARGET = REF_TABLE_ID 对应的表
+4. 自动执行查询: TARGET WHERE REF_FIELD_NAME = 当前值
+```
+
+**配置示例（BUSER.USERG_ID1 → BUSERG）：**
+```sql
+-- USERG_ID1 字段配置了参照到 BUSERG
+-- REF_TABLE_ID = 'TBLID_BUSERG', REF_FIELD_NAME = 'USERG_ID'
+-- 当 USERG_ID1 = 'ADMIN' 时点击 →
+-- → 打开 BUSERG 表，自动查询 WHERE USERG_ID = 'ADMIN'
+```
+
+#### … Select（选择按钮）
+
+| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
+|---------|---------|---------|---------|
+| `REF_TABLE_ID` 非空 | **右侧面板** | 始终显示 | 打开 RefPicker 弹窗，浏览参照表，选中一行回填值 |
+| `REF_TABLE_ID` 非空 + 第一列或编辑行 | **表格单元格** | 编辑模式 | 同上 |
+
+#### C Calendar（日历按钮）
+
+| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
+|---------|---------|---------|---------|
+| `CALENDAR_BUTTON='Y'` | **表格单元格 + 右侧面板** | 编辑状态 | 显示日期选择器，值格式 `YYYYMMDD` |
+
+### 表级按钮（右侧面板 Related 区域）
+
+| 配置组合 | 显示位置 | 点击行为 |
+|---------|---------|---------|
+| `SM_DRILL_DEF` 中 SOURCE_TABLE_ID = 当前表 | **右侧面板 Data Tab 底部** | 打开 TARGET_TABLE_ID，传递当前记录所有主键字段（除 REL_FLG）作为查询条件 |
+
+**实现逻辑：**
+```
+1. 取当前记录的所有 IS_KEY='Y' 且 FIELD_NAME != 'REL_FLG' 的字段
+2. 将每个主键字段的值作为查询参数
+3. 打开 TARGET_TABLE_ID 表
+4. 自动执行查询
+```
+
+**配置示例（BROUTE → BROUTECNCT）：**
+```sql
+INSERT INTO SM_DRILL_DEF (SOURCE_TABLE_ID, TARGET_TABLE_ID, LABEL, SORT_NO)
+VALUES ('TBLID_BROUTE', 'TBLID_BROUTECNCT', 'Route Connect', 2);
+```
+
+### 旧系统按钮对照总表
+
+| 旧系统 TABLEINFOEX 列 | 旧系统值 | 旧系统按钮 | 新系统实现 | 状态 |
+|----------------------|---------|-----------|-----------|------|
+| `JUMP_BUTTON='Y'` + `REF_TABLE_ID ≠ VIEW` | Jump | J | `→` 按钮（表格+右侧面板） | ✅ |
+| `JUMP_BUTTON='Y'` + `REF_TABLE_ID = VIEW` | View | V | 未实现（Web无对应） | ❌ |
+| `OPEN_BUTTON=1` | Open | O | 未实现（文件路径不适用Web） | ❌ |
+| `OPEN_BUTTON=2` | Jump(Prop) | J | `→` 按钮（同 Jump） | ✅ |
+| `SPECIAL_BUTTON=1` | Jump(Sheet) | J | `→` 按钮（同 Jump） | ✅ |
+| `SPECIAL_BUTTON=2` | More | M | 未实现（Web textarea 替代） | ❌ |
+| `SPECIAL_BUTTON=3` | RouteID | R | 未实现（特定业务逻辑） | ❌ |
+| `CALENDAR_BUTTON='Y'` | Calendar | C | `el-date-picker` | ✅ |
+| 字段长度 ≥ 100 | More | M | 未实现 | ❌ |
+| `RETRIEVAL_TABLE ≠ NONE` | Dropdown | - | `el-select` | ✅ |
+| `REF_TABLE_ID` 非空 | Select | - | `…` RefPicker | ✅ |
+| `SM_DRILL_DEF` 配置 | - | - | Related 下钻 | ✅ |
+
+### 按钮配置决策树
+
+```
+新增表时，按以下流程判断需要配置哪些按钮：
+
+字段需要参照/下拉？
+├── 固定选项 → RETRIEVAL_TABLE='SYSDATA', FORMAT='选项类别'
+├── 参照其他表 → REF_TABLE_ID='TBLID_XXX', REF_FIELD_NAME='xxx_id'
+│   └── 需要表格单元格跳转？ → JUMP_BUTTON='Y'
+├── 日期字段 → CALENDAR_BUTTON='Y'
+└── 表级下钻 → SM_DRILL_DEF INSERT
+```
 
 ---
 
-> **版本**: v1.0 | **最后更新**: 2026-05-28
+> **版本**: v2.0 | **最后更新**: 2026-05-28
