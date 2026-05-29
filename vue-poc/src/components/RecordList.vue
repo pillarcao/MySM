@@ -40,15 +40,15 @@ const onClick = (rec, idx) => {
 </script>
 
 <style scoped>
-.record-list { font-size: 13px; }
-.panel-title { font-weight: bold; padding: 8px; border-bottom: 1px solid #e8e8e8; }
-.list-body { padding: 4px 0; }
+.record-list { font-size: 12px; }
+.panel-title { font-weight: 600; padding: 0 12px; height: 30px; line-height: 30px; border-bottom: 1px solid #e8e8e8; color: #333; }
+.list-body { padding: 2px 0; }
 .list-item {
-  padding: 4px 8px; cursor: pointer; border-bottom: 1px solid #f5f5f5;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 5px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background .15s;
 }
 .list-item:hover { background: #e6f7ff; }
-.list-item.active { background: #bae7ff; }
-.item-text { color: #333; }
-.empty-hint { color: #999; text-align: center; padding: 20px; }
+.list-item.active { background: #bae7ff; color: #1890ff; font-weight: 500; }
+.item-text { color: #555; }
+.empty-hint { color: #bbb; text-align: center; padding: 30px 0; font-size: 12px; }
 </style>

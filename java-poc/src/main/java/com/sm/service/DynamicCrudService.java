@@ -175,10 +175,12 @@ public class DynamicCrudService {
                 setValues.add(val);
             }
         }
-        setParts.add("\"COMP_FLG\" = 'N'");
-        setParts.add("\"LAST_DATE1\" = CURRENT_TIMESTAMP");
-        setParts.add("\"LAST_ACT1\" = 'UPDATE'");
-        setParts.add("\"LAST_USER1\" = 'SYSTEM'");
+        if (tableName.startsWith("B")) {
+            setParts.add("\"COMP_FLG\" = 'N'");
+            setParts.add("\"LAST_DATE1\" = CURRENT_TIMESTAMP");
+            setParts.add("\"LAST_ACT1\" = 'UPDATE'");
+            setParts.add("\"LAST_USER1\" = 'SYSTEM'");
+        }
 
         String sql = "UPDATE " + tableName + " SET " + String.join(", ", setParts) + " WHERE " + where;
         setValues.addAll(keyValues);
@@ -205,12 +207,14 @@ public class DynamicCrudService {
             placeholders.add("?");
         }
 
-        if (!columns.contains("\"REL_FLG\"")) {
-            columns.add("\"REL_FLG\"");
-            values.add("N");
-            placeholders.add("?");
+        if (tableName.startsWith("B")) {
+            if (!columns.contains("\"REL_FLG\"")) {
+                columns.add("\"REL_FLG\"");
+                values.add("N");
+                placeholders.add("?");
+            }
+            addDefaultControlColumns(columns, values, placeholders);
         }
-        addDefaultControlColumns(columns, values, placeholders);
 
         String sql = "INSERT INTO " + tableName + " (" + String.join(", ", columns)
                 + ") VALUES (" + String.join(", ", placeholders) + ")";

@@ -345,11 +345,15 @@ watch(selectedLeftKey, (key) => {
 
 <style scoped>
 .card-header { display: flex; justify-content: space-between; align-items: center; }
+:deep(.el-card) { border-radius: 8px; overflow: hidden; margin: 8px; }
+:deep(.el-card__header) { padding: 6px 12px !important; }
+:deep(.el-card__body) { padding: 6px 12px !important; }
 .input-with-btn { display: flex; align-items: center; gap: 8px; }
-.cell-text { font-size: 12px; }
+.cell-text { font-size: 12px; color: #333; }
 .cell-wrap { display: flex; align-items: center; gap: 2px; }
-.cell-ref-btn { padding: 2px 4px; font-size: 10px; min-height: 20px; flex-shrink: 0; }
-:deep(.row-editcomp) { background-color: #f6ffed !important; }
-:deep(.row-released) { background-color: #e6f7ff !important; }
+.cell-ref-btn { padding: 0 4px; font-size: 10px; min-height: 20px; flex-shrink: 0; }
+:deep(.row-editcomp) { background-color: #fcffe6 !important; }
+:deep(.row-released) { background-color: #f0f0f0 !important; }
+:deep(.el-table__body tr.current-row) { background-color: #e6f7ff !important; }
 :deep(.el-input__inner) { padding: 0 4px; font-size: 12px; }
 </style>

@@ -17,13 +17,15 @@
       </el-header>
 
       <div class="toolbar-strip">
-        <el-button size="small" @click="toolbar.add()">新增</el-button>
-        <el-button size="small" @click="toolbar.update()" :disabled="!toolbar.hasSelection">Update</el-button>
-        <el-button size="small" type="primary" @click="toolbar.save()" :disabled="!toolbar.isEditMode">保存</el-button>
-        <el-button size="small" type="warning" @click="toolbar.editComp()" :disabled="!toolbar.canEditComp">编辑完成</el-button>
-        <el-button size="small" type="success" @click="toolbar.release()" :disabled="!toolbar.canRelease">Release</el-button>
-        <el-button size="small" type="danger" @click="toolbar.delete()" :disabled="!toolbar.hasSelection">删除</el-button>
-        <el-button size="small" @click="toolbar.undo()">Undo</el-button>
+        <el-tooltip content="新增 (New)" placement="bottom"><el-button circle size="small" @click="toolbar.add()"><el-icon><Plus /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="编辑 (Update)" placement="bottom"><el-button circle size="small" @click="toolbar.update()" :disabled="!toolbar.hasSelection" :type="toolbar.isEditMode ? 'warning' : 'default'"><el-icon><Edit /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="保存 (Save)" placement="bottom"><el-button circle size="small" type="primary" @click="toolbar.save()" :disabled="!toolbar.isEditMode"><el-icon><Check /></el-icon></el-button></el-tooltip>
+        <div class="toolbar-divider" />
+        <el-tooltip content="编辑完成 (EditComp)" placement="bottom"><el-button circle size="small" type="warning" @click="toolbar.editComp()" :disabled="!toolbar.canEditComp"><el-icon><Finished /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="发布 (Release)" placement="bottom"><el-button circle size="small" type="success" @click="toolbar.release()" :disabled="!toolbar.canRelease"><el-icon><Promotion /></el-icon></el-button></el-tooltip>
+        <div class="toolbar-divider" />
+        <el-tooltip content="删除 (Delete)" placement="bottom"><el-button circle size="small" type="danger" @click="toolbar.delete()" :disabled="!toolbar.hasSelection"><el-icon><Delete /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="撤销 (Undo)" placement="bottom"><el-button circle size="small" @click="toolbar.undo()"><el-icon><RefreshLeft /></el-icon></el-button></el-tooltip>
       </div>
 
       <div class="body-area">
@@ -51,6 +53,7 @@
 import { ref, onMounted, computed, provide, reactive } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { Plus, Edit, Check, Finished, Promotion, Delete, RefreshLeft } from '@element-plus/icons-vue'
 import LoginView from './components/LoginView.vue'
 import RecordDetail from './components/RecordDetail.vue'
 import RecordList from './components/RecordList.vue'
@@ -129,21 +132,26 @@ onMounted(() => {
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 .sm-poc { height: 100vh; display: flex; flex-direction: column; }
-.top-header { display: flex; align-items: center; background: #001529; height: 50px; padding: 0 16px; flex-shrink: 0; }
-.logo { color: #fff; font-size: 16px; font-weight: bold; margin-right: 20px; white-space: nowrap; }
-.top-menu { flex: 1; border: none; }
-.top-menu .el-sub-menu .el-sub-menu__title { color: rgba(255,255,255,0.7); border-bottom: none; }
-.top-menu .el-sub-menu .el-sub-menu__title:hover { color: #fff; background: rgba(255,255,255,0.1); }
-.top-menu .el-menu-item { color: rgba(255,255,255,0.7); }
-.top-menu .el-menu-item:hover, .top-menu .el-menu-item.is-active { color: #fff; background: #1890ff; }
-.logout-btn { margin-left: auto; }
-.toolbar-strip { display: flex; gap: 4px; padding: 4px 16px; background: #f0f2f5; border-bottom: 1px solid #d9d9d9; flex-shrink: 0; }
-.body-area { flex: 1; display: flex; overflow: hidden; }
+.top-header { display: flex; align-items: center; background: #001529; height: 32px !important; padding: 0 12px !important; flex-shrink: 0; box-sizing: border-box; }
+.logo { color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; margin-right: 20px; }
+.top-menu { flex: 1; border: none !important; min-width: 0; height: 32px; }
+.top-menu :deep(.el-sub-menu__title) { color: rgba(255,255,255,0.8) !important; border-bottom: none !important; font-size: 13px; height: 32px !important; line-height: 32px !important; padding: 0 12px !important; }
+.top-menu :deep(.el-sub-menu__title):hover { color: #fff !important; background: rgba(255,255,255,0.08) !important; }
+.top-menu :deep(.el-menu-item) { color: rgba(255,255,255,0.8); font-size: 13px; height: 40px; line-height: 40px; }
+.top-menu :deep(.el-menu-item):hover, .top-menu :deep(.el-menu-item.is-active) { color: #fff; background: #1890ff; }
+.logout-btn { margin-left: auto; height: 28px; font-size: 12px; flex-shrink: 0; }
+.toolbar-strip { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+.toolbar-divider { width: 1px; height: 20px; background: #ccc; margin: 0 4px; }
+.body-area { flex: 1; display: flex; overflow: hidden; margin: 0; }
 .left-panel { width: 200px; background: #fafafa; border-right: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }
-.center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
-.tab-strip { display: flex; background: #e8e8e8; border-bottom: 1px solid #d9d9d9; padding: 0 4px; flex-shrink: 0; overflow-x: auto; }
-.tab-item { display: flex; align-items: center; padding: 4px 10px; cursor: pointer; font-size: 12px; border-right: 1px solid #d9d9d9; white-space: nowrap; }
-.tab-item:hover { background: #f0f0f0; } .tab-item.active { background: #fff; border-bottom: 2px solid #1890ff; }
+.center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f5f5f5; }
+.right-panel { width: 280px; background: #fafafa; border-left: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }
+.tab-strip { display: flex; align-items: center; background: #e8e8e8; border-bottom: 1px solid #ddd; height: 30px; padding: 0 4px; flex-shrink: 0; overflow-x: auto; gap: 0; }
+.tab-item { display: flex; align-items: center; gap: 3px; padding: 3px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; color: #666; transition: all .15s; border-radius: 4px; }
+.tab-item:hover { background: #ddd; color: #333; }
+.tab-item.active { background: #fff; color: #1890ff; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.tab-close { margin-left: 6px; font-size: 14px; color: #aaa; line-height: 1; }
+.tab-close:hover { color: #f5222d; }
 .tab-close { margin-left: 6px; font-size: 14px; color: #999; } .tab-close:hover { color: #f00; }
 .empty-center { flex: 1; display: flex; align-items: center; justify-content: center; color: #999; font-size: 14px; }
 .right-panel { width: 300px; background: #fafafa; border-left: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }

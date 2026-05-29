@@ -136,7 +136,7 @@ const propertyLabels = [
   { key: 'LOCK_TIME', label: '锁定时间' },
 ]
 
-const propertyFields = computed(() => propertyLabels)
+const propertyFields = computed(() => propertyLabels.filter(p => props.record && p.key in props.record))
 
 const isKeyField = (f) => f.isKey === 'Y'
 
@@ -163,22 +163,23 @@ const onRefSelect = (val) => {
 </script>
 
 <style scoped>
-.record-detail { padding: 8px; font-size: 12px; }
-.panel-title { font-weight: bold; padding: 8px; border-bottom: 1px solid #e8e8e8; margin-bottom: 4px; }
+.record-detail { padding: 0; font-size: 12px; }
+.panel-title { font-weight: 600; padding: 0 12px; height: 30px; line-height: 30px; border-bottom: 1px solid #e8e8e8; color: #333; }
 .tab-toolbar { padding: 4px 0 8px; text-align: right; }
-.kv-list { }
+.kv-list { padding: 4px 8px; }
 .kv-row {
-  display: flex; align-items: center; padding: 2px 0;
-  border-bottom: 1px solid #f5f5f5; gap: 4px;
+  display: flex; align-items: center; padding: 3px 0; gap: 6px;
 }
-.kv-key { width: 80px; color: #888; flex-shrink: 0; text-align: right; font-size: 11px; }
+.kv-key { width: 72px; color: #999; flex-shrink: 0; text-align: right; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kv-input-wrap { flex: 1; min-width: 0; }
-.kv-input-wrap :deep(.el-input__inner) { padding: 0 4px; font-size: 12px; }
-.ref-btn { flex-shrink: 0; padding: 2px 6px; font-size: 11px; min-width: 24px; }
-.ref-placeholder { width: 24px; flex-shrink: 0; }
-.kv-val { flex: 1; word-break: break-all; }
+.kv-input-wrap :deep(.el-input__inner) { padding: 2px 6px; font-size: 12px; }
+.kv-input-wrap :deep(.el-input__wrapper) { box-shadow: none; }
+.kv-input-wrap :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px #dcdfe6 inset; }
+.ref-btn { flex-shrink: 0; padding: 0 6px; font-size: 11px; min-height: 22px; }
+.ref-placeholder { width: 28px; flex-shrink: 0; }
+.kv-val { flex: 1; word-break: break-all; padding: 2px 6px; color: #333; }
 .empty-hint { color: #999; text-align: center; padding: 40px 0; font-size: 13px; }
-.drilldown-section { margin-top: 12px; padding-top: 8px; border-top: 1px solid #e8e8e8; }
-.section-title { font-size: 12px; color: #666; margin-bottom: 6px; }
+.drilldown-section { margin: 8px; padding-top: 8px; border-top: 1px solid #e8e8e8; }
+.section-title { font-size: 11px; color: #999; margin-bottom: 6px; font-weight: 600; }
 .drilldown-btns { display: flex; flex-wrap: wrap; gap: 4px; }
 </style>
