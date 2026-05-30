@@ -402,7 +402,11 @@ INSERT INTO SM_DRILL_DEF (SOURCE_TABLE_ID, TARGET_TABLE_ID, LABEL, SORT_NO)
 VALUES ('TBLID_BROUTE', 'TBLID_BROUTECNCT', 'Route Connect', 2);
 ```
 
-下钻时自动传递源表的所有主键字段（除 REL_FLG）作为查询条件。
+下钻时自动传递源表的所有主键字段（除 REL_FLG）作为查询条件。  
+无选中记录时不传递过滤条件，直接打开目标表。  
+联合主键自动补全（如 BROUTE 传递 ROUTE_ID + ROUTE_VER）。  
+
+> **注意：** SM_DRILL_DEF 用于**表级**下钻（右侧面板 Related 区域）。**字段级**跳转使用 `JUMP_BUTTON='Y'` + `REF_TABLE_ID` 配置。
 
 ---
 
@@ -528,94 +532,87 @@ INSERT INTO SM_DRILL_DEF VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related', 1);
 | 删除 | 选中 REL_FLG='Y' 的行 | 删除记录 |
 | Undo | 新增行未保存 | 撤销新增，移除空白行 |
 
-### 字段级按钮（表格单元格 + 右侧面板）
+### 字段级按钮（表格表头 + 数据单元格 + 右侧面板）
 
-#### → Jump（跳转按钮）
+#### → Jump（表头跳转按钮）
 
-| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
-|---------|---------|---------|---------|
-| `REF_TABLE_ID` 非空 + `JUMP_BUTTON='Y'` | **表格单元格** | 字段值非空 | 打开参照表，按 `REF_FIELD_NAME`=当前值过滤 |
-| `REF_TABLE_ID` 非空（字段有值） | **右侧面板** | 字段值非空 | 同上 |
+**配置：** `JUMP_BUTTON='Y'` + `REF_TABLE_ID` + `REF_FIELD_NAME`
 
-**实现逻辑：**
-```
-1. 取当前字段的值作为查询条件
-2. 查询字段名 = REF_FIELD_NAME（如果为空则用当前字段名）
-3. 打开 TARGET = REF_TABLE_ID 对应的表
-4. 自动执行查询: TARGET WHERE REF_FIELD_NAME = 当前值
-```
+**显示位置：** 表格表头标题下方（第二行）
 
-**配置示例（BUSER.USERG_ID1 → BUSERG）：**
+**行为：** 点击 → 打开目标表，传递**当前选中记录的所有主键字段值**作为查询条件。联合主键自动补全（如 BROUTE 下钻时传 ROUTE_ID + ROUTE_VER）。
+
+**配置示例：**
 ```sql
--- USERG_ID1 字段配置了参照到 BUSERG
--- REF_TABLE_ID = 'TBLID_BUSERG', REF_FIELD_NAME = 'USERG_ID'
--- 当 USERG_ID1 = 'ADMIN' 时点击 →
--- → 打开 BUSERG 表，自动查询 WHERE USERG_ID = 'ADMIN'
+-- BCARRY_PORT_EQP.EQP_ID 跳转到 BEQP
+UPDATE SM_FIELD_DEF SET JUMP_BUTTON = 'Y', REF_TABLE_ID = 'TBLID_BEQP', REF_FIELD_NAME = 'EQP_ID'
+WHERE TABLE_ID = 'TBLID_BCARRY_PORT_EQP' AND FIELD_NAME = 'EQP_ID';
 ```
 
-#### … Select（选择按钮）
+#### … Select（参照选择按钮）
 
-| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
-|---------|---------|---------|---------|
-| `REF_TABLE_ID` 非空 | **右侧面板** | 始终显示 | 打开 RefPicker 弹窗，浏览参照表，选中一行回填值 |
-| `REF_TABLE_ID` 非空 + 第一列或编辑行 | **表格单元格** | 编辑模式 | 同上 |
+**配置：** `REF_TABLE_ID` 非空（无需 JUMP_BUTTON）
+
+**显示位置：** 表格数据单元格（第一列始终显示）+ 右侧面板字段旁
+
+**行为：** 打开 RefPicker 弹窗 → 浏览目标表 → 选中行 → 目标表主键值回填到源表当前字段。
 
 #### C Calendar（日历按钮）
 
-| 配置组合 | 显示位置 | 显示条件 | 点击行为 |
-|---------|---------|---------|---------|
-| `CALENDAR_BUTTON='Y'` | **表格单元格 + 右侧面板** | 编辑状态 | 显示日期选择器，值格式 `YYYYMMDD` |
+**配置：** `CALENDAR_BUTTON='Y'`  
+**显示位置：** 表格编辑行 + 右侧面板编辑状态  
+**行为：** 显示 `el-date-picker`，值格式 `YYYYMMDD`
+
+#### OPEN_BUTTON 按钮行为对照
+
+| 配置 | 行为 | 表头 → | 右侧面板下钻 |
+|------|------|--------|-------------|
+| `JUMP_BUTTON='Y'` + `OPEN_BUTTON=0` + `REF_TABLE_ID` + `REF_FIELD_NAME` | 表头 → 跳转目标表，带源记录主键查询，从目标表回传主键 | ✅ | ❌ |
+| `JUMP_BUTTON='Y'` + `OPEN_BUTTON=1` + `REF_TABLE_ID`，`REF_FIELD_NAME` 为空 | 跳转目标表，不带过滤条件 | ✅ | ❌ |
+| `JUMP_BUTTON='Y'` + `OPEN_BUTTON=2` + `REF_TABLE_ID` + `REF_FIELD_NAME` | 使用源记录主键查询下钻，不弹查询对话框 | ✅ | ✅ |
 
 ### 表级按钮（右侧面板 Related 区域）
 
-| 配置组合 | 显示位置 | 点击行为 |
-|---------|---------|---------|
-| `SM_DRILL_DEF` 中 SOURCE_TABLE_ID = 当前表 | **右侧面板 Data Tab 底部** | 打开 TARGET_TABLE_ID，传递当前记录所有主键字段（除 REL_FLG）作为查询条件 |
+**配置：** `SM_DRILL_DEF` 表
 
-**实现逻辑：**
-```
-1. 取当前记录的所有 IS_KEY='Y' 且 FIELD_NAME != 'REL_FLG' 的字段
-2. 将每个主键字段的值作为查询参数
-3. 打开 TARGET_TABLE_ID 表
-4. 自动执行查询
-```
+**显示位置：** 右侧面板 Data Tab 底部 "Related" 区域，单列排列，宽度一致。
 
-**配置示例（BROUTE → BROUTECNCT）：**
+**行为：** 
+1. 取当前记录所有主键字段（`IS_KEY='Y'` 且 `FIELD_NAME != 'REL_FLG'`）的值
+2. 跳转到 TARGET_TABLE_ID，传递所有主键值作为查询条件
+3. 无选中记录时不传递过滤条件（直接跳转）
+
+**配置示例：**
 ```sql
-INSERT INTO SM_DRILL_DEF (SOURCE_TABLE_ID, TARGET_TABLE_ID, LABEL, SORT_NO)
-VALUES ('TBLID_BROUTE', 'TBLID_BROUTECNCT', 'Route Connect', 2);
+-- BROUTE 下钻 3 个关联表
+INSERT INTO SM_DRILL_DEF (SOURCE_TABLE_ID, TARGET_TABLE_ID, LABEL, SORT_NO) VALUES
+('TBLID_BROUTE', 'TBLID_BROUTE_MROUTE', 'Module Route', 1),
+('TBLID_BROUTE', 'TBLID_BROUTECNCT', 'Route Connect', 2),
+('TBLID_BROUTE', 'TBLID_BQTIME', 'Qtime', 3);
 ```
 
-### 旧系统按钮对照总表
+### 按钮功能总览
 
-| 旧系统 TABLEINFOEX 列 | 旧系统值 | 旧系统按钮 | 新系统实现 | 状态 |
-|----------------------|---------|-----------|-----------|------|
-| `JUMP_BUTTON='Y'` + `REF_TABLE_ID ≠ VIEW` | Jump | J | `→` 按钮（表格+右侧面板） | ✅ |
-| `JUMP_BUTTON='Y'` + `REF_TABLE_ID = VIEW` | View | V | 未实现（Web无对应） | ❌ |
-| `OPEN_BUTTON=1` | Open | O | 未实现（文件路径不适用Web） | ❌ |
-| `OPEN_BUTTON=2` | Jump(Prop) | J | `→` 按钮（同 Jump） | ✅ |
-| `SPECIAL_BUTTON=1` | Jump(Sheet) | J | `→` 按钮（同 Jump） | ✅ |
-| `SPECIAL_BUTTON=2` | More | M | 未实现（Web textarea 替代） | ❌ |
-| `SPECIAL_BUTTON=3` | RouteID | R | 未实现（特定业务逻辑） | ❌ |
-| `CALENDAR_BUTTON='Y'` | Calendar | C | `el-date-picker` | ✅ |
-| 字段长度 ≥ 100 | More | M | 未实现 | ❌ |
-| `RETRIEVAL_TABLE ≠ NONE` | Dropdown | - | `el-select` | ✅ |
-| `REF_TABLE_ID` 非空 | Select | - | `…` RefPicker | ✅ |
-| `SM_DRILL_DEF` 配置 | - | - | Related 下钻 | ✅ |
+| 按钮 | 位置 | 触发条件 | 功能 |
+|------|------|---------|------|
+| **→** | 表头第二行 | `JUMP_BUTTON='Y'` + `REF_TABLE_ID` | 打开目标表，传源记录所有主键过滤 |
+| **…** | 表格单元格 | `REF_TABLE_ID` 非空 | RefPicker：选目标表行，主键回填 |
+| **→** | 右侧面板字段旁 | `REF_TABLE_ID` 非空 + 字段有值 | 跳转到目标表，传源记录所有主键 |
+| **…** | 右侧面板字段旁 | `REF_TABLE_ID` 非空 | RefPicker 参照选择 |
+| **Related** | 右侧面板底部 | `SM_DRILL_DEF` 配置 | 表级下钻，传主键查询 |
+| **日历** | 编辑态 | `CALENDAR_BUTTON='Y'` | 日期选择器 |
 
-### 按钮配置决策树
+### 旧系统按钮对照
 
-```
-新增表时，按以下流程判断需要配置哪些按钮：
-
-字段需要参照/下拉？
-├── 固定选项 → RETRIEVAL_TABLE='SYSDATA', FORMAT='选项类别'
-├── 参照其他表 → REF_TABLE_ID='TBLID_XXX', REF_FIELD_NAME='xxx_id'
-│   └── 需要表格单元格跳转？ → JUMP_BUTTON='Y'
-├── 日期字段 → CALENDAR_BUTTON='Y'
-└── 表级下钻 → SM_DRILL_DEF INSERT
-```
+| 旧系统 | 新系统 | 配置 |
+|--------|--------|------|
+| JUMP_BUTTON=Y (Jump) | 表头 → | `JUMP_BUTTON='Y'` + `REF_TABLE_ID` |
+| OPEN_BUTTON=2 (Jump) | 表头 → + 右侧下钻 | `OPEN_BUTTON=2` + `REF_TABLE_ID` |
+| OPEN_BUTTON=1 (Open) | 未实现 | Web 不适用 |
+| SPECIAL_BUTTON=1 (J) | 表头 → | 同 JUMP_BUTTON |
+| CALENDAR_BUTTON=Y | 日期选择器 | `CALENDAR_BUTTON='Y'` |
+| RETRIEVAL_TABLE=SYSDATA | 下拉选择 | `RETRIEVAL_TABLE='SYSDATA'` |
 
 ---
 
-> **版本**: v2.0 | **最后更新**: 2026-05-28
+> **版本**: v3.0 | **最后更新**: 2026-05-30

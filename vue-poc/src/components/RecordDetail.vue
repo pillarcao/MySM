@@ -90,7 +90,7 @@ const activeTab = ref('data')
 const refPickerVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '' })
 
-// Drill-down: fetch from /api/meta/drills/{tableId}
+// Drill-down: from SM_DRILL_DEF (table-level)
 const drillTargets = ref([])
 const fetchDrills = async () => {
   if (!props.tableId) { drillTargets.value = []; return }
@@ -100,21 +100,28 @@ const fetchDrills = async () => {
 watch(() => props.tableId, fetchDrills, { immediate: true })
 
 const jumpToRef = (f) => {
-  if (!props.record || !props.record[f.fieldName]) return
-  const query = {}
-  query[f.refFieldName || f.fieldName] = (props.record[f.fieldName] || '').toString().trim()
-  emit('drill-down', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query })
+  if (!props.record) return
+  emit('drill-down', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query: buildKeyQuery() })
 }
 
 const drillDown = (dd) => {
-  if (!props.record) return
-  // Build query params from current record's key fields
+  const query = {}
+  if (props.record) {
+    const keyFields = props.fields.filter(f => f.isKey === 'Y' && f.fieldName !== 'REL_FLG')
+    keyFields.forEach(f => {
+      query[f.fieldName] = (props.record[f.fieldName] || '').toString().trim()
+    })
+  }
+  emit('drill-down', { tableId: dd.targetTableId, label: dd.label, query })
+}
+
+const buildKeyQuery = () => {
   const keyFields = props.fields.filter(f => f.isKey === 'Y' && f.fieldName !== 'REL_FLG')
   const query = {}
   keyFields.forEach(f => {
     query[f.fieldName] = (props.record[f.fieldName] || '').toString().trim()
   })
-  emit('drill-down', { tableId: dd.targetTableId, label: dd.label, query })
+  return query
 }
 
 const dataFields = computed(() => {
@@ -179,7 +186,8 @@ const onRefSelect = (val) => {
 .ref-placeholder { width: 28px; flex-shrink: 0; }
 .kv-val { flex: 1; word-break: break-all; padding: 2px 6px; color: #333; }
 .empty-hint { color: #999; text-align: center; padding: 40px 0; font-size: 13px; }
-.drilldown-section { margin: 8px; padding-top: 8px; border-top: 1px solid #e8e8e8; }
-.section-title { font-size: 11px; color: #999; margin-bottom: 6px; font-weight: 600; }
-.drilldown-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.drilldown-section { margin: 0 8px 8px; padding-top: 6px; border-top: 1px solid #e8e8e8; }
+.section-title { font-size: 11px; color: #999; margin-bottom: 4px; font-weight: 600; padding: 0 4px; }
+.drilldown-btns { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
+.drilldown-btns .el-button { width: 100%; justify-content: center; margin-left: 0; }
 </style>

@@ -25,13 +25,32 @@
         highlight-current-row
         @row-click="onRowClick"
       >
+        <el-table-column type="index" width="50">
+          <template #header>
+            <div class="header-cell">
+              <span>#</span>
+              <div class="header-placeholder"></div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column
           v-for="col in displayColumns"
           :key="col.fieldName"
-          :prop="col.fieldName"
-          :label="col.usTitle || col.jpTitle"
           :width="(col.usTitle || col.jpTitle || col.fieldName).length * 10 + 20"
         >
+          <template #header>
+            <div class="header-cell">
+              <span>{{ col.usTitle || col.jpTitle }}</span>
+              <el-button
+                v-if="col.refTableId && col.jumpButton === 'Y'"
+                size="small"
+                class="header-jump-btn"
+                title="Jump to {{ col.refTableId }}"
+                @click.stop="colJump(col)"
+              >→</el-button>
+              <div v-else class="header-placeholder"></div>
+            </div>
+          </template>
           <template #default="{ row }">
             <div class="cell-wrap">
               <el-date-picker
@@ -51,13 +70,6 @@
               />
               <span v-else class="cell-text">{{ formatCell(row[col.fieldName]) }}</span>
               <el-button
-                v-if="col.refTableId && col.jumpButton === 'Y' && formatCell(row[col.fieldName])"
-                size="small"
-                class="cell-ref-btn"
-                title="Jump to referenced table"
-                @click.stop="cellJump(col, row)"
-              >→</el-button>
-              <el-button
                 v-if="col.refTableId && (col === displayColumns[0] || row === editingRow)"
                 size="small"
                 class="cell-ref-btn"
@@ -66,10 +78,22 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="Comp" width="60" prop="COMP_FLG">
+        <el-table-column width="60" prop="COMP_FLG">
+          <template #header>
+            <div class="header-cell">
+              <span>Comp</span>
+              <div class="header-placeholder"></div>
+            </div>
+          </template>
           <template #default="{ row }">{{ (row.COMP_FLG||'').trim() }}</template>
         </el-table-column>
-        <el-table-column label="Rel" width="60" prop="REL_FLG">
+        <el-table-column width="60" prop="REL_FLG">
+          <template #header>
+            <div class="header-cell">
+              <span>Rel</span>
+              <div class="header-placeholder"></div>
+            </div>
+          </template>
           <template #default="{ row }">{{ (row.REL_FLG||'').trim() }}</template>
         </el-table-column>
       </el-table>
@@ -123,6 +147,7 @@ const tableRowClassName = ({ row }) => {
   const r = (row.REL_FLG||'').trim(); const c = (row.COMP_FLG||'').trim()
   if (r==='Y') return 'row-released'
   if (r==='N' && c==='Y') return 'row-editcomp'
+  if (r==='N' && c==='N') return 'row-editing'
   return ''
 }
 
@@ -267,9 +292,15 @@ const handleDelete = async () => {
   } catch (err) { if (err!=='cancel') ElMessage.error('删除失败: '+(err.response?.data?.error||err.message)) }
 }
 
+const colJump = (f) => {
+  emit('cell-jump', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query: {} })
+}
+
 const cellJump = (f, row) => {
   const query = {}
-  query[f.refFieldName || f.fieldName] = (row[f.fieldName] || '').toString().trim()
+  keyFields.value.forEach(kf => {
+    query[kf.fieldName] = (row[kf.fieldName] || '').toString().trim()
+  })
   emit('cell-jump', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query })
 }
 
@@ -352,8 +383,16 @@ watch(selectedLeftKey, (key) => {
 .cell-text { font-size: 12px; color: #333; }
 .cell-wrap { display: flex; align-items: center; gap: 2px; }
 .cell-ref-btn { padding: 0 4px; font-size: 10px; min-height: 20px; flex-shrink: 0; }
-:deep(.row-editcomp) { background-color: #fcffe6 !important; }
-:deep(.row-released) { background-color: #f0f0f0 !important; }
+.header-cell { display: flex; flex-direction: column; align-items: stretch; }
+.header-cell span { display: flex; align-items: flex-start; justify-content: center; padding: 4px 4px 2px; font-weight: 600; color: #333; font-size: 12px; height: 22px; }
+.header-placeholder { height: 22px; border-top: 1px solid #d0d0d0; background: #e8e8e8; }
+.header-jump-btn { font-size: 11px; border-radius: 0; border: none; border-top: 1px solid #d0d0d0; background: #e8e8e8; padding: 3px 0; height: 22px; width: 100%; justify-content: center; }
+:deep(.el-table__header) th { background: linear-gradient(to bottom, #f0f0f0 50%, #e8e8e8 50%) !important; padding: 0 !important; }
+:deep(.el-table__header) th .cell { padding: 0 !important; width: 100%; }
+:deep(.el-table__header) th { background-color: #f0f0f0 !important; color: #333; font-weight: 600; }
+:deep(.row-editing) { background-color: #f5f5f5 !important; }
+:deep(.row-editcomp) { background-color: #fffbe6 !important; }
+:deep(.row-released) { background-color: #f6ffed !important; }
 :deep(.el-table__body tr.current-row) { background-color: #e6f7ff !important; }
 :deep(.el-input__inner) { padding: 0 4px; font-size: 12px; }
 </style>

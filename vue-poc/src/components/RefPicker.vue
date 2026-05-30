@@ -11,13 +11,13 @@
         <el-form-item
           v-for="field in queryFields"
           :key="field.fieldName"
-          :label="field.jpTitle"
+          :label="field.usTitle || field.jpTitle"
         >
-          <el-input v-model="queryForm[field.fieldName]" :placeholder="field.jpTitle" clearable size="small" />
+          <el-input v-model="queryForm[field.fieldName]" :placeholder="field.usTitle || field.jpTitle" clearable size="small" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" size="small" @click="handleSearch">查询</el-button>
-          <el-button size="small" @click="handleReset">重置</el-button>
+          <el-button type="primary" size="small" @click="handleSearch">Search</el-button>
+          <el-button size="small" @click="handleReset">Reset</el-button>
         </el-form-item>
       </el-form>
 
@@ -33,15 +33,15 @@
           v-for="col in displayColumns"
           :key="col.fieldName"
           :prop="col.fieldName"
-          :label="col.jpTitle"
+          :label="col.usTitle || col.jpTitle"
           :width="col.dbLength * 8 + 40"
         />
       </el-table>
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" :disabled="!selectedRow" @click="handleConfirm">确认</el-button>
+      <el-button @click="handleClose">Cancel</el-button>
+      <el-button type="primary" :disabled="!selectedRow" @click="handleConfirm">Confirm</el-button>
     </template>
   </el-dialog>
 </template>
@@ -71,7 +71,7 @@ const queryForm = ref({})
 const selectedRow = ref(null)
 
 const title = computed(() => {
-  return (config.value.table?.jpTitle || props.tableId) + ' 参照'
+  return (config.value.table?.usTitle || config.value.table?.jpTitle || props.tableId) + ' Reference'
 })
 
 const displayColumns = computed(() => {
@@ -87,7 +87,7 @@ const fetchConfig = async () => {
     const res = await axios.get(`/api/meta/${props.tableId}`)
     config.value = res.data
   } catch (err) {
-    ElMessage.error('加载参照配置失败: ' + err.message)
+    ElMessage.error('Failed to load reference config: ' + err.message)
   }
 }
 
@@ -96,7 +96,7 @@ const fetchList = async () => {
     const res = await axios.get(`/api/dynamic/${props.tableId}/list`)
     list.value = res.data
   } catch (err) {
-    ElMessage.error('加载参照数据失败: ' + err.message)
+    ElMessage.error('Failed to load reference data: ' + err.message)
   }
 }
 
