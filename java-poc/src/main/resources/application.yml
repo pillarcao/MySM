@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:sm_db;DB_CLOSE_DELAY=-1;MODE=DB2
+    url: jdbc:h2:file:./data/sm_db;DB_CLOSE_DELAY=-1;MODE=DB2
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -11,6 +11,7 @@ spring:
   sql:
     init:
       mode: always
+      continue-on-error: true
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
 

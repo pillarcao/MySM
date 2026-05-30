@@ -96,6 +96,24 @@
           </template>
           <template #default="{ row }">{{ (row.REL_FLG||'').trim() }}</template>
         </el-table-column>
+        <el-table-column width="80" prop="OWNER">
+          <template #header>
+            <div class="header-cell">
+              <span>Owner</span>
+              <div class="header-placeholder"></div>
+            </div>
+          </template>
+          <template #default="{ row }">{{ formatCell(row.OWNER) }}</template>
+        </el-table-column>
+        <el-table-column width="140" prop="CRE_DATE">
+          <template #header>
+            <div class="header-cell">
+              <span>Created</span>
+              <div class="header-placeholder"></div>
+            </div>
+          </template>
+          <template #default="{ row }">{{ formatCell(row.CRE_DATE) }}</template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -123,7 +141,7 @@ const queryForm = ref({})
 const dropdownOptions = ref({})
 const refPickerVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '', targetRow: null })
-const queryStatus = ref('EDIT')
+const queryStatus = ref('ALL')
 const currentRow = ref(null)
 const searchDialogVisible = ref(false)
 const editingRow = ref(null)
@@ -249,11 +267,19 @@ const saveInline = async () => {
 }
 
 const handleUndo = () => {
-  if (!isNewRow.value || !editingRow.value) { ElMessage.warning('只能撤销新增的行'); return }
-  const idx = list.value.indexOf(editingRow.value)
-  if (idx >= 0) list.value.splice(idx, 1)
+  if (!editingRow.value) { ElMessage.warning('没有正在编辑的行'); return }
+  if (isNewRow.value) {
+    // Remove newly added blank row
+    const idx = list.value.indexOf(editingRow.value)
+    if (idx >= 0) list.value.splice(idx, 1)
+    ElMessage.info('已撤销新增')
+  } else {
+    // Revert edits by reloading data from server
+    ElMessage.info('已撤销编辑')
+  }
   editingRow.value = null; isNewRow.value = false; currentRow.value = null
   updateToolbarState()
+  doSearch() // Reload data to revert changes
 }
 
 const handleEditComp = async () => {
