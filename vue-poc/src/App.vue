@@ -139,6 +139,12 @@ onMounted(() => {
 .top-menu :deep(.el-sub-menu__title):hover { color: #fff !important; background: rgba(255,255,255,0.08) !important; }
 .top-menu :deep(.el-menu-item) { color: rgba(255,255,255,0.8); font-size: 13px; height: 40px; line-height: 40px; }
 .top-menu :deep(.el-menu-item):hover, .top-menu :deep(.el-menu-item.is-active) { color: #fff; background: #1890ff; }
+.top-menu :deep(.el-menu--popup) { background: #001529; border: 1px solid rgba(255,255,255,0.1); }
+.top-menu :deep(.el-menu--popup) { background: #001529; min-width: 160px; }
+.top-menu :deep(.el-menu--popup .el-menu-item) { background: #001529; color: rgba(255,255,255,0.8); font-size: 13px; height: 36px; line-height: 36px; }
+.top-menu :deep(.el-menu--popup .el-menu-item):hover { background: #1890ff; color: #fff; }
+.top-menu :deep(.el-menu--popup .el-sub-menu__title) { color: rgba(255,255,255,0.8) !important; font-size: 13px; height: 36px; line-height: 36px; background: #001529 !important; }
+.top-menu :deep(.el-menu--popup .el-sub-menu__title):hover { background: #1890ff !important; color: #fff !important; }
 .logout-btn { margin-left: auto; height: 28px; font-size: 12px; flex-shrink: 0; }
 .toolbar-strip { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
 .toolbar-divider { width: 1px; height: 20px; background: #ccc; margin: 0 4px; }
