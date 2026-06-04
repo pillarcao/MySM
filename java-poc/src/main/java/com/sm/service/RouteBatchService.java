@@ -21,9 +21,20 @@ public class RouteBatchService {
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
 
-    // Tables involved in Route batch operations (must have ROUTE_ID + ROUTE_VER columns)
+    /**
+     * Route batch operation tables (from original MFC system RouteCopy/RouteVerUp/RouteRelease).
+     * Ordered by dependency: BROUTE first, then child tables.
+     * Tables not yet configured in SM_TABLE_DEF are silently skipped.
+     */
     private static final String[] ROUTE_BATCH_TABLES = {
-        "TBLID_BROUTE", "TBLID_BROUTE_MROUTE"
+        "TBLID_BROUTE",
+        "TBLID_BROUTE_MROUTE",
+        "TBLID_BROUTECNCT",
+        "TBLID_BRECIP_LOOKUP",
+        "TBLID_BMEAS_LOOKUP",
+        "TBLID_BPROCDATA_LOOKUP",
+        "TBLID_BQTIME",
+        "TBLID_BMULTI_RECIP_SET"
     };
 
     private boolean hasRouteKeys(String tableId) {
