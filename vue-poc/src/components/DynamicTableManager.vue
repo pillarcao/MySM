@@ -323,27 +323,68 @@ const toggleUpdate = () => {
 const saveInline = async () => {
   if (!editingRow.value) { ElMessage.warning('没有正在编辑的行'); return }
   try {
+    const wasNew = isNewRow.value
+    // Snapshot original data before save (for UNDO)
+    const snapshot = wasNew ? null : { ...currentRow.value }
     await axios.post(`/api/dynamic/${props.tableId}/save`, editingRow.value)
+    // Push to undo stack
+    if (wasNew) {
+      const keys = {}
+      keyFields.value.forEach(f => { keys[f.fieldName] = editingRow.value[f.fieldName] })
+      undoStack.value.push({ type: 'add', keys })
+    } else if (snapshot) {
+      undoStack.value.push({ type: 'update', row: snapshot })
+    }
     ElMessage.success('保存成功')
     editingRow.value = null; isNewRow.value = false; updateToolbarState()
     doSearch()
   } catch (err) { ElMessage.error('保存失败: '+(err.response?.data?.error||err.message)) }
 }
 
-const handleUndo = () => {
-  if (!editingRow.value) { ElMessage.warning('没有正在编辑的行'); return }
-  if (isNewRow.value) {
-    // Remove newly added blank row
-    const idx = list.value.indexOf(editingRow.value)
-    if (idx >= 0) list.value.splice(idx, 1)
-    ElMessage.info('已撤销新增')
-  } else {
-    // Revert edits by reloading data from server
-    ElMessage.info('已撤销编辑')
+// UNDO stack: records actions (delete/add/update) for reversal
+const undoStack = ref([])
+
+const handleUndo = async () => {
+  // Phase 1: local edit undo (revert unsaved changes)
+  if (editingRow.value) {
+    if (isNewRow.value) {
+      list.value = list.value.filter(r => r !== editingRow.value)
+      ElMessage.info('已撤销新增')
+    } else {
+      ElMessage.info('已撤销编辑')
+    }
+    editingRow.value = null; isNewRow.value = false; currentRow.value = null
+    updateToolbarState()
+    doSearch()
+    return
   }
-  editingRow.value = null; isNewRow.value = false; currentRow.value = null
-  updateToolbarState()
-  doSearch() // Reload data to revert changes
+
+  // Phase 2: DB-level undo (reverse last committed action)
+  if (undoStack.value.length === 0) { ElMessage.warning('没有可撤销的操作'); return }
+  const action = undoStack.value.pop()
+  try {
+    switch (action.type) {
+      case 'add':
+        await axios.post(`/api/dynamic/${props.tableId}/delete`, action.keys)
+        ElMessage.success('已撤销新增')
+        break
+      case 'delete':
+        await axios.post(`/api/dynamic/${props.tableId}/save`, action.row)
+        ElMessage.success('已撤销删除')
+        break
+      case 'update':
+        await axios.post(`/api/dynamic/${props.tableId}/save`, action.row)
+        ElMessage.success('已撤销更新')
+        break
+    }
+    editingRow.value = null; isNewRow.value = false; currentRow.value = null
+    updateToolbarState()
+    doSearch()
+  } catch (err) {
+    // Push back on failure so user can retry
+    undoStack.value.push(action)
+    ElMessage.error('撤销失败: ' + (err.response?.data?.error || err.message))
+  }
 }
 
 const handleEditComp = async () => {
@@ -377,7 +418,9 @@ const handleDelete = async () => {
   if (!currentRow.value) return
   try {
     await ElMessageBox.confirm('确认删除?','提示',{type:'warning'})
+    const snapshot = { ...currentRow.value }
     await axios.post(`/api/dynamic/${props.tableId}/delete`, currentRow.value)
+    undoStack.value.push({ type: 'delete', row: snapshot })
     ElMessage.success('删除成功'); doSearch()
   } catch (err) { if (err!=='cancel') ElMessage.error('删除失败: '+(err.response?.data?.error||err.message)) }
 }
