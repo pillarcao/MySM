@@ -311,8 +311,6 @@ const toggleUpdate = () => {
     // Enter edit mode for selected row
     editingRow.value = currentRow.value
     isNewRow.value = false
-    editingRow.value.COMP_FLG = 'N'
-    editingRow.value.REL_FLG = 'N'
   }
   updateToolbarState()
 }
@@ -391,8 +389,6 @@ const handleClear = () => {
   } else if (currentRow.value) {
     editingRow.value = currentRow.value
     isNewRow.value = false
-    editingRow.value.COMP_FLG = 'N'
-    editingRow.value.REL_FLG = 'N'
     formFields.value.forEach(f => {
       if (f.isKey !== 'Y') {
         editingRow.value[f.fieldName] = f.fieldType === 'NUMBER' ? 0 : ''

@@ -84,10 +84,13 @@ public class DynamicCrudService {
         String where = buildWhere(keyFields);
         List<Object> keyValues = buildValues(keyFields, dbData);
 
-        // B 表主键含 REL_FLG，固定按 'N' 判断
+        // B 表主键含 REL_FLG，使用请求中的 REL_FLG 值
         if (tableName.startsWith("B")) {
+            Object relFlgVal = dbData.get("REL_FLG");
+            String relFlg = (relFlgVal != null && !relFlgVal.toString().trim().isEmpty())
+                    ? relFlgVal.toString().trim() : "N";
             where += " AND \"REL_FLG\" = ?";
-            keyValues.add("N");
+            keyValues.add(relFlg);
         }
 
         Integer count = jdbcTemplate.queryForObject(
@@ -176,7 +179,6 @@ public class DynamicCrudService {
             }
         }
         if (tableName.startsWith("B")) {
-            setParts.add("\"COMP_FLG\" = 'N'");
             setParts.add("\"LAST_DATE1\" = CURRENT_TIMESTAMP");
             setParts.add("\"LAST_ACT1\" = 'UPDATE'");
             setParts.add("\"LAST_USER1\" = 'SYSTEM'");
