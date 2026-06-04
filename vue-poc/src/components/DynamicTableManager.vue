@@ -124,10 +124,13 @@
       :x="ctxMenu.x"
       :y="ctxMenu.y"
       :col="ctxMenu.col"
+      :table-id="props.tableId"
       :disabled="ctxDisabled"
       @action="ctxAction"
       @close="ctxMenu.visible = false"
     />
+
+    <RouteCopyDialog v-model="routeCopyVisible" :route-id="currentRow?.ROUTE_ID || ''" :route-ver="currentRow?.ROUTE_VER || ''" @confirm="onRouteCopyConfirm" />
 
     <RefPicker v-model="refPickerVisible" :table-id="refPickerConfig.tableId" :ref-field="refPickerConfig.refField" @select="onRefSelect" />
   </div>
@@ -140,6 +143,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import RefPicker from './RefPicker.vue'
 import SearchDialog from './SearchDialog.vue'
 import ContextMenu from './ContextMenu.vue'
+import RouteCopyDialog from './RouteCopyDialog.vue'
 
 const props = defineProps({ tableId: { type: String, required: true }, drillQuery: { type: Object, default: () => ({}) }, showSearch: { type: Boolean, default: true } })
 const emit = defineEmits(['row-select', 'records-change', 'edit-state', 'searched', 'cell-jump'])
@@ -153,6 +157,7 @@ const config = ref({ table: null, fields: [] })
 const queryForm = ref({})
 const dropdownOptions = ref({})
 const refPickerVisible = ref(false)
+const routeCopyVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '', targetRow: null })
 const queryStatus = ref('ALL')
 const currentRow = ref(null)
@@ -185,6 +190,9 @@ const ctxDisabled = computed(() => ({
   find: list.value.length === 0,
   rollback: !currentRow.value || ((currentRow.value.REL_FLG || '').trim() !== 'N' && editingRow.value !== currentRow.value) || isNewRow.value,
   forceUnlock: !currentRow.value || !(currentRow.value.LOCK_USER && currentRow.value.LOCK_USER.trim()),
+  routeCopy: !currentRow.value,
+  routeVerUp: !currentRow.value || (currentRow.value.REL_FLG || '').trim() !== 'Y',
+  routeRelease: !currentRow.value || (currentRow.value.REL_FLG || '').trim() !== 'N',
   sort: !ctxMenu.col,
   hideCol: !ctxMenu.col
 }))
@@ -301,6 +309,9 @@ const ctxAction = (action) => {
     case 'find': handleFind(); break
     case 'rollback': handleRollback(); break
     case 'forceUnlock': handleForceUnlock(); break
+    case 'routeCopy': handleRouteCopy(); break
+    case 'routeVerUp': handleRouteVerUp(); break
+    case 'routeRelease': handleRouteRelease(); break
     case 'sort-asc': list.value.sort((a,b) => String(a[ctxMenu.col?.property]||'').localeCompare(String(b[ctxMenu.col?.property]||''))); break
     case 'sort-desc': list.value.sort((a,b) => String(b[ctxMenu.col?.property]||'').localeCompare(String(a[ctxMenu.col?.property]||''))); break
     case 'hide-col': if (ctxMenu.col?.property) hiddenCols.value.add(ctxMenu.col.property); break
@@ -614,6 +625,61 @@ const handleForceUnlock = async () => {
   }
 }
 
+// --- Route batch operations ---
+
+const onRouteCopyConfirm = async (newRouteId) => {
+  try {
+    await ElMessageBox.confirm(
+      'Route batch copy will process related tables (Route, Route Module, Route Connection). Continue?',
+      'Confirm', { type: 'warning' })
+    const res = await axios.post('/api/route/copy', {
+      routeId: (currentRow.value.ROUTE_ID || '').trim(),
+      routeVer: (currentRow.value.ROUTE_VER || '').trim(),
+      newRouteId
+    })
+    ElMessage.success('Route copy completed: ' + JSON.stringify(res.data))
+    doSearch()
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('Route copy failed: ' + (err.response?.data?.error || err.message))
+  }
+}
+
+const handleRouteCopy = () => { routeCopyVisible.value = true }
+
+const handleRouteVerUp = async () => {
+  if (!currentRow.value) return
+  try {
+    await ElMessageBox.confirm(
+      'Revise version for all objects in Route? This will increment ROUTE_VER for all related tables.',
+      'Confirm', { type: 'warning' })
+    const res = await axios.post('/api/route/verup', {
+      routeId: (currentRow.value.ROUTE_ID || '').trim(),
+      routeVer: (currentRow.value.ROUTE_VER || '').trim()
+    })
+    ElMessage.success('Route version up completed. New version: ' + res.data.newVersion)
+    doSearch()
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('Route verup failed: ' + (err.response?.data?.error || err.message))
+  }
+}
+
+const handleRouteRelease = async () => {
+  if (!currentRow.value) return
+  try {
+    await ElMessageBox.confirm(
+      'Release all objects in Route? This will batch release all related tables.',
+      'Confirm', { type: 'warning' })
+    await axios.post('/api/route/release', {
+      routeId: (currentRow.value.ROUTE_ID || '').trim(),
+      routeVer: (currentRow.value.ROUTE_VER || '').trim()
+    })
+    ElMessage.success('Route batch release completed')
+    doSearch()
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('Route release failed: ' + (err.response?.data?.error || err.message))
+  }
+}
+
 const colJump = (f) => {
   emit('cell-jump', { tableId: f.refTableId, label: f.usTitle || f.jpTitle || f.refTableId, query: {} })
 }
@@ -650,6 +716,9 @@ const wireToolbar = () => {
   toolbar.paste = handlePaste
   toolbar.find = handleFind
   toolbar.rollback = handleRollback
+  toolbar.routeCopy = handleRouteCopy
+  toolbar.routeVerUp = handleRouteVerUp
+  toolbar.routeRelease = handleRouteRelease
   updateToolbarState()
 }
 wireToolbar()

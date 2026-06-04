@@ -18,6 +18,13 @@
     <div class="ctx-divider"></div>
     <div class="ctx-item" :class="{ disabled: disabled.rollback }" @click="emit('action', 'rollback')"><el-icon><Refresh /></el-icon> Rollback</div>
     <div class="ctx-item" :class="{ disabled: disabled.forceUnlock }" @click="emit('action', 'forceUnlock')"><el-icon><Unlock /></el-icon> Force Unlock</div>
+    <!-- Route-specific actions (only for BROUTE table) -->
+    <template v-if="tableId === 'TBLID_BROUTE'">
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" :class="{ disabled: disabled.routeCopy }" @click="emit('action', 'routeCopy')"><el-icon><CopyDocument /></el-icon> Copy All Objects in Route</div>
+      <div class="ctx-item" :class="{ disabled: disabled.routeVerUp }" @click="emit('action', 'routeVerUp')"><el-icon><Top /></el-icon> Revise Version All Objects</div>
+      <div class="ctx-item" :class="{ disabled: disabled.routeRelease }" @click="emit('action', 'routeRelease')"><el-icon><Promotion /></el-icon> Release All Objects In Route</div>
+    </template>
     <div class="ctx-divider"></div>
     <div class="ctx-item" :class="{ disabled: disabled.sort }" @click="emit('action', 'sort-asc')"><el-icon><SortUp /></el-icon> Sort Asc</div>
     <div class="ctx-item" :class="{ disabled: disabled.sort }" @click="emit('action', 'sort-desc')"><el-icon><SortDown /></el-icon> Sort Desc</div>
@@ -32,7 +39,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import {
   Plus, Edit, Check, Finished, Promotion, Delete, RefreshLeft,
   SortUp, SortDown, Hide, View,
-  CircleClose, CopyDocument, Document, Search, Refresh, Unlock
+  CircleClose, CopyDocument, Document, Search, Refresh, Unlock, Top
 } from '@element-plus/icons-vue'
 
 defineProps({
@@ -40,6 +47,7 @@ defineProps({
   x: { type: Number, default: 0 },
   y: { type: Number, default: 0 },
   col: { type: Object, default: null },
+  tableId: { type: String, default: '' },
   disabled: {
     type: Object,
     default: () => ({
@@ -55,7 +63,10 @@ defineProps({
       rollback: true,
       forceUnlock: true,
       sort: true,
-      hideCol: true
+      hideCol: true,
+      routeCopy: true,
+      routeVerUp: true,
+      routeRelease: true
     })
   }
 })
