@@ -20,7 +20,7 @@
         :data="list"
         border
         size="small"
-        max-height="calc(100vh - 170px)"
+        max-height="calc(100vh - 155px)"
         style="width: 100%; font-size: 12px;"
         :row-class-name="tableRowClassName"
         highlight-current-row
