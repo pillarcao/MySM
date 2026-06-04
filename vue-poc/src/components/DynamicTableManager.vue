@@ -346,7 +346,13 @@ const saveInline = async () => {
     const wasNew = isNewRow.value
     // Snapshot original data before save (for UNDO)
     const snapshot = wasNew ? null : { ...currentRow.value }
-    await axios.post(`/api/dynamic/${props.tableId}/save`, editingRow.value)
+    // Build payload: only SM_FIELD_DEF business fields + REL_FLG
+    const payload = {}
+    formFields.value.forEach(f => {
+      payload[f.fieldName] = editingRow.value[f.fieldName]
+    })
+    payload.REL_FLG = editingRow.value.REL_FLG
+    await axios.post(`/api/dynamic/${props.tableId}/save`, payload)
     // Push to undo stack
     if (wasNew) {
       const keys = {}
