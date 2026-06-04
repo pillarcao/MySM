@@ -154,7 +154,7 @@ const queryForm = ref({})
 const dropdownOptions = ref({})
 const refPickerVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '', targetRow: null })
-const queryStatus = ref('EDIT')
+const queryStatus = ref('ALL')
 const currentRow = ref(null)
 const searchDialogVisible = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, col: null })
@@ -227,8 +227,28 @@ const doSearch = async () => {
     const res = hasQ
       ? await axios.post(`/api/dynamic/${props.tableId}/search`, queryForm.value, { params: { status: queryStatus.value } })
       : await axios.get(`/api/dynamic/${props.tableId}/list`, { params: { status: queryStatus.value } })
-    list.value = res.data; emitRecordsChange(res.data)
+    list.value = dedupByBizKey(res.data); emitRecordsChange(res.data)
   } catch (err) { ElMessage.error('查询失败: '+(err.response?.data?.error||err.message)) }
+}
+
+// Deduplicate: for same biz key, prefer REL_FLG='N' over 'Y'
+const dedupByBizKey = (rows) => {
+  if (!rows || rows.length === 0) return rows
+  const bizKeys = keyFields.value.map(f => f.fieldName)
+  if (bizKeys.length === 0) return rows
+  const groups = {}
+  for (const row of rows) {
+    const k = bizKeys.map(f => (row[f] || '').toString().trim()).join('|')
+    const existing = groups[k]
+    if (!existing) {
+      groups[k] = row
+    } else {
+      const curFlg = (row.REL_FLG || '').trim()
+      const extFlg = (existing.REL_FLG || '').trim()
+      if (curFlg === 'N' && extFlg === 'Y') groups[k] = row
+    }
+  }
+  return Object.values(groups)
 }
 
 const onSearchDialog = ({ status, conditions }) => {
@@ -634,7 +654,7 @@ const load = async () => {
   // Apply drill-down query params if present
   const q = props.drillQuery
   if (q && Object.keys(q).length > 0) {
-    queryStatus.value = 'EDIT'
+    queryStatus.value = 'ALL'
     Object.keys(q).forEach(k => { queryForm.value[k] = q[k] })
     doSearch()
     emit('searched')
