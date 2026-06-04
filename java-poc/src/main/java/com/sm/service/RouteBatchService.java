@@ -37,13 +37,6 @@ public class RouteBatchService {
         "TBLID_BMULTI_RECIP_SET"
     };
 
-    private boolean hasRouteKeys(String tableId) {
-        List<SmFieldDef> fields = fieldDefMapper.findByTableId(tableId);
-        boolean hasRid = fields.stream().anyMatch(f -> "ROUTE_ID".equals(f.getFieldName()));
-        boolean hasRver = fields.stream().anyMatch(f -> "ROUTE_VER".equals(f.getFieldName()));
-        return hasRid && hasRver;
-    }
-
     /**
      * Copy all objects in Route to a new Route ID.
      * For each related table: SELECT source rows, INSERT with new ROUTE_ID.
@@ -52,7 +45,6 @@ public class RouteBatchService {
     public Map<String, Object> routeCopy(String srcRouteId, String srcRouteVer, String newRouteId) {
         Map<String, Object> result = new LinkedHashMap<>();
         for (String tableId : ROUTE_BATCH_TABLES) {
-            if (!hasRouteKeys(tableId)) continue;
             try {
                 int count = copyTable(tableId, srcRouteId, srcRouteVer, newRouteId, srcRouteVer);
                 result.put(tableId, count + " rows copied");
@@ -76,7 +68,6 @@ public class RouteBatchService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         for (String tableId : ROUTE_BATCH_TABLES) {
-            if (!hasRouteKeys(tableId)) continue;
             try {
                 int count = copyTable(tableId, routeId, srcRouteVer, routeId, newRouteVer);
                 result.put(tableId, count + " rows ver-up'd");
@@ -96,7 +87,6 @@ public class RouteBatchService {
     public Map<String, Object> routeRelease(String routeId, String routeVer) {
         Map<String, Object> result = new LinkedHashMap<>();
         for (String tableId : ROUTE_BATCH_TABLES) {
-            if (!hasRouteKeys(tableId)) continue;
             try {
                 releaseTable(tableId, routeId, routeVer);
                 result.put(tableId, "released");
