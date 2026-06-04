@@ -85,7 +85,9 @@ const toolbar = reactive({
   add: () => {}, update: () => {}, editComp: () => {}, release: () => {}, save: () => {}, delete: () => {}, undo: () => {},
   copy: () => {}, paste: () => {}, find: () => {}, rollback: () => {},
 })
+const selectedLeftKey = ref(null)
 provide('toolbar', toolbar)
+provide('selectedLeftKey', selectedLeftKey)
 
 const menuFlat = computed(() => {
   const groups = {}
@@ -115,7 +117,7 @@ const onLoginSuccess = () => { isLoggedIn.value = true; fetchTables().then(() =>
 const handleLogout = () => { localStorage.removeItem('sm_token'); delete axios.defaults.headers.common['Authorization']; isLoggedIn.value = false }
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }
 const onRecordsChange = (keys) => { recordKeys.value = keys || [] }
-const onRecordSelect = () => {}
+const onRecordSelect = (rec) => { selectedLeftKey.value = rec }
 const onEditState = (state) => { isNewRecord.value = state.isNewRow }
 const onDrillDown = ({ tableId, label, query }) => { openTable(tableId, label); drillQueries.value[tableId] = query }
 
