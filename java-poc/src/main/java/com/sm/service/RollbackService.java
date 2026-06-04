@@ -8,9 +8,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +22,9 @@ public class RollbackService {
 
     @Transactional
     public void rollback(String tableId, Map<String, Object> keys) {
-        String tableName = getTableName(tableId);
+        String bTableName = getTableName(tableId);
+        String dTableName = bTableName.replaceFirst("^B", "D");
+
         List<SmFieldDef> keyFields = fieldDefMapper.findByTableId(tableId).stream()
                 .filter(f -> "Y".equals(f.getIsKey()) && !"REL_FLG".equals(f.getFieldName()))
                 .collect(Collectors.toList());
@@ -32,34 +33,91 @@ public class RollbackService {
             throw new IllegalArgumentException("表 " + tableId + " 未配置业务主键");
         }
 
-        // 1. Check editable record exists (REL_FLG='N')
-        StringBuilder whereN = new StringBuilder("\"REL_FLG\" = 'N'");
-        List<Object> keyValues = new ArrayList<>();
+        // 1. Find D-table released record
+        StringBuilder whereD = new StringBuilder();
+        List<Object> dValues = new ArrayList<>();
         for (SmFieldDef kf : keyFields) {
-            whereN.append(" AND \"").append(kf.getFieldName()).append("\" = ?");
-            keyValues.add(keys.get(kf.getFieldName()));
+            if (whereD.length() > 0) whereD.append(" AND ");
+            whereD.append("\"").append(kf.getFieldName()).append("\" = ?");
+            dValues.add(keys.get(kf.getFieldName()));
         }
-        List<Map<String, Object>> editRows = jdbcTemplate.queryForList(
-                "SELECT * FROM " + tableName + " WHERE " + whereN, keyValues.toArray());
-        if (editRows.isEmpty()) {
-            throw new IllegalArgumentException("未找到可回滚的记录（需存在编辑态记录）");
+        List<Map<String, Object>> dRows;
+        try {
+            dRows = jdbcTemplate.queryForList(
+                    "SELECT * FROM " + dTableName + " WHERE " + whereD, dValues.toArray());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("D 表 " + dTableName + " 不存在或查询失败: " + e.getMessage());
+        }
+        if (dRows.isEmpty()) {
+            throw new IllegalArgumentException("未找到 D 表 Release 版本记录，无法回滚");
+        }
+        Map<String, Object> dRecord = dRows.get(0);
+
+        // 2. Delete B-table editable record (REL_FLG='N')
+        StringBuilder whereB = new StringBuilder("\"REL_FLG\" = 'N'");
+        List<Object> bValues = new ArrayList<>();
+        for (SmFieldDef kf : keyFields) {
+            whereB.append(" AND \"").append(kf.getFieldName()).append("\" = ?");
+            bValues.add(keys.get(kf.getFieldName()));
+        }
+        int deleted = jdbcTemplate.update("DELETE FROM " + bTableName + " WHERE " + whereB, bValues.toArray());
+
+        // 3. Delete old B-table released record (REL_FLG='Y') if exists, to avoid duplicate key
+        StringBuilder whereOldY = new StringBuilder("\"REL_FLG\" = 'Y'");
+        List<Object> yValues = new ArrayList<>();
+        for (SmFieldDef kf : keyFields) {
+            whereOldY.append(" AND \"").append(kf.getFieldName()).append("\" = ?");
+            yValues.add(keys.get(kf.getFieldName()));
+        }
+        jdbcTemplate.update("DELETE FROM " + bTableName + " WHERE " + whereOldY, yValues.toArray());
+
+        // 4. Insert D-table data into B-table with REL_FLG='Y', COMP_FLG='Y'
+        List<String> columns = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        List<String> placeholders = new ArrayList<>();
+
+        List<SmFieldDef> allFields = fieldDefMapper.findByTableId(tableId);
+        Set<String> fieldNames = allFields.stream()
+                .filter(f -> !"Y".equals(f.getIsDummy()) && !"Y".equals(f.getIsAuto()))
+                .map(SmFieldDef::getFieldName)
+                .collect(Collectors.toSet());
+
+        for (Map.Entry<String, Object> entry : dRecord.entrySet()) {
+            String colName = entry.getKey();
+            if (!fieldNames.contains(colName)) continue;
+            columns.add("\"" + colName + "\"");
+            values.add(entry.getValue());
+            placeholders.add("?");
         }
 
-        // 2. Check released record exists (REL_FLG='Y')
-        StringBuilder whereY = new StringBuilder("\"REL_FLG\" = 'Y'");
-        List<Object> whereYValues = new ArrayList<>();
-        for (SmFieldDef kf : keyFields) {
-            whereY.append(" AND \"").append(kf.getFieldName()).append("\" = ?");
-            whereYValues.add(keys.get(kf.getFieldName()));
-        }
-        List<Map<String, Object>> relRows = jdbcTemplate.queryForList(
-                "SELECT * FROM " + tableName + " WHERE " + whereY, whereYValues.toArray());
-        if (relRows.isEmpty()) {
-            throw new IllegalArgumentException("未找到已 Release 版本记录，无法回滚");
-        }
+        // Add B-table control fields
+        addField(columns, values, placeholders, "REL_FLG", "Y");
+        addField(columns, values, placeholders, "COMP_FLG", "Y");
+        addField(columns, values, placeholders, "CRE_USER", dRecord.getOrDefault("CRE_USER", "SYSTEM"));
+        addField(columns, values, placeholders, "CRE_DATE", dRecord.getOrDefault("CRE_DATE", new Timestamp(System.currentTimeMillis())));
+        addField(columns, values, placeholders, "OWNER", dRecord.getOrDefault("OWNER", "SYSTEM"));
+        addField(columns, values, placeholders, "OWNERG", dRecord.getOrDefault("OWNERG", ""));
+        addField(columns, values, placeholders, "PERMISSION", dRecord.getOrDefault("PERMISSION", "PUBLIC    "));
+        addField(columns, values, placeholders, "LOCK_USER", "");
+        addField(columns, values, placeholders, "LOCK_TIME", null);
+        addField(columns, values, placeholders, "COMMENT", dRecord.getOrDefault("COMMENT", ""));
+        addField(columns, values, placeholders, "LAST_DATE1", new Timestamp(System.currentTimeMillis()));
+        addField(columns, values, placeholders, "LAST_ACT1", "ROLLBACK");
+        addField(columns, values, placeholders, "LAST_USER1", "SYSTEM");
 
-        // 3. Delete the editable record
-        jdbcTemplate.update("DELETE FROM " + tableName + " WHERE " + whereN, keyValues.toArray());
+        String sql = "INSERT INTO " + bTableName + " (" + String.join(", ", columns)
+                + ") VALUES (" + String.join(", ", placeholders) + ")";
+        jdbcTemplate.update(sql, values.toArray());
+    }
+
+    private void addField(List<String> columns, List<Object> values, List<String> placeholders,
+                          String name, Object value) {
+        String quoted = "\"" + name + "\"";
+        if (!columns.contains(quoted)) {
+            columns.add(quoted);
+            values.add(value);
+            placeholders.add("?");
+        }
     }
 
     private String getTableName(String tableId) {

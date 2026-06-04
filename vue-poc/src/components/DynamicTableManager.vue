@@ -311,6 +311,8 @@ const toggleUpdate = () => {
     // Enter edit mode for selected row
     editingRow.value = currentRow.value
     isNewRow.value = false
+    editingRow.value.COMP_FLG = 'N'
+    editingRow.value.REL_FLG = 'N'
   }
   updateToolbarState()
 }
@@ -389,6 +391,8 @@ const handleClear = () => {
   } else if (currentRow.value) {
     editingRow.value = currentRow.value
     isNewRow.value = false
+    editingRow.value.COMP_FLG = 'N'
+    editingRow.value.REL_FLG = 'N'
     formFields.value.forEach(f => {
       if (f.isKey !== 'Y') {
         editingRow.value[f.fieldName] = f.fieldType === 'NUMBER' ? 0 : ''
@@ -505,8 +509,8 @@ const handleRollback = async () => {
       ElMessage.success('回滚成功')
       return
     }
-    // DB-level rollback: delete REL_FLG='N' record, keep released version
-    await ElMessageBox.confirm('确认回滚？这将删除当前编辑记录并恢复 Release 版本。', '提示', { type: 'warning' })
+    // DB-level rollback: overwrite B-table editable record with D-table released data
+    await ElMessageBox.confirm('确认回滚？将用 D 表 Release 数据覆盖 B 表编辑记录。', '提示', { type: 'warning' })
     const keys = {}
     keyFields.value.forEach(f => { keys[f.fieldName] = currentRow.value[f.fieldName] })
     await axios.post(`/api/rollback/${props.tableId}`, keys)
