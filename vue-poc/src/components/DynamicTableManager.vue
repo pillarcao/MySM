@@ -182,7 +182,7 @@ const ctxDisabled = computed(() => ({
   copy: !currentRow.value,
   paste: !editingRow.value,
   find: list.value.length === 0,
-  rollback: !currentRow.value || (currentRow.value.REL_FLG || '').trim() !== 'N' || isNewRow.value,
+  rollback: !currentRow.value || ((currentRow.value.REL_FLG || '').trim() !== 'N' && editingRow.value !== currentRow.value) || isNewRow.value,
   forceUnlock: !currentRow.value || !(currentRow.value.LOCK_USER && currentRow.value.LOCK_USER.trim()),
   sort: !ctxMenu.col,
   hideCol: !ctxMenu.col
@@ -498,6 +498,18 @@ const handleFind = async () => {
 const handleRollback = async () => {
   if (!currentRow.value) return
   try {
+    // Local editing (not saved to DB yet): just cancel edit and reload
+    if (editingRow.value === currentRow.value && !isNewRow.value) {
+      await ElMessageBox.confirm('确认回滚？将撤销当前编辑并恢复原始数据。', '提示', { type: 'warning' })
+      editingRow.value = null
+      isNewRow.value = false
+      currentRow.value = null
+      updateToolbarState()
+      doSearch()
+      ElMessage.success('回滚成功')
+      return
+    }
+    // DB-level rollback: delete REL_FLG='N' record, keep released version
     await ElMessageBox.confirm('确认回滚？这将删除当前编辑记录并恢复 Release 版本。', '提示', { type: 'warning' })
     const keys = {}
     keyFields.value.forEach(f => { keys[f.fieldName] = currentRow.value[f.fieldName] })
