@@ -77,7 +77,10 @@ function onDocumentKeydown(e) {
 }
 
 onMounted(() => {
-  document.addEventListener('click', onDocumentClick)
+  // Delay listener registration to avoid right-click event closing the menu immediately
+  setTimeout(() => {
+    document.addEventListener('click', onDocumentClick)
+  }, 0)
   document.addEventListener('keydown', onDocumentKeydown)
 })
 

@@ -259,8 +259,9 @@ const onContextMenu = (row, col, evt) => {
   evt.preventDefault()
   if (row) { currentRow.value = row; updateToolbarState() }
   ctxMenu.visible = true
-  ctxMenu.x = evt.clientX
-  ctxMenu.y = evt.clientY
+  // Clamp position to keep menu within viewport (menu ~200x520px)
+  ctxMenu.x = Math.min(evt.clientX, window.innerWidth - 200)
+  ctxMenu.y = Math.min(evt.clientY, window.innerHeight - 520)
   ctxMenu.col = col
 }
 
