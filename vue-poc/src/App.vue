@@ -157,9 +157,9 @@ onMounted(() => {
 .toolbar-strip { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
 .toolbar-divider { width: 1px; height: 20px; background: #ccc; margin: 0 4px; }
 .body-area { flex: 1; display: flex; overflow: hidden; margin: 0; }
-.left-panel { width: 200px; background: #fafafa; border-right: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }
+.left-panel { width: 200px; background: #fafafa; border-right: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; max-height: 100%; }
 .center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f5f5f5; }
-.right-panel { width: 280px; background: #fafafa; border-left: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }
+.right-panel { width: 280px; background: #fafafa; border-left: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; max-height: 100%; }
 .tab-strip { display: flex; align-items: center; background: #e8e8e8; border-bottom: 1px solid #ddd; height: 30px; padding: 0 4px; flex-shrink: 0; overflow-x: auto; gap: 0; }
 .tab-item { display: flex; align-items: center; gap: 3px; padding: 3px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; color: #666; transition: all .15s; border-radius: 4px; }
 .tab-item:hover { background: #ddd; color: #333; }
