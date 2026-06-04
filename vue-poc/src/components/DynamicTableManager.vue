@@ -577,6 +577,10 @@ const wireToolbar = () => {
   toolbar.update = toggleUpdate
   toolbar.save = saveInline
   toolbar.undo = handleUndo
+  toolbar.copy = handleCopy
+  toolbar.paste = handlePaste
+  toolbar.find = handleFind
+  toolbar.rollback = handleRollback
   updateToolbarState()
 }
 wireToolbar()

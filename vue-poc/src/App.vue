@@ -24,6 +24,13 @@
         <el-tooltip content="编辑完成 (EditComp)" placement="bottom"><el-button circle size="small" type="warning" @click="toolbar.editComp()" :disabled="!toolbar.canEditComp"><el-icon><Finished /></el-icon></el-button></el-tooltip>
         <el-tooltip content="发布 (Release)" placement="bottom"><el-button circle size="small" type="success" @click="toolbar.release()" :disabled="!toolbar.canRelease"><el-icon><Promotion /></el-icon></el-button></el-tooltip>
         <div class="toolbar-divider" />
+        <div class="toolbar-divider" />
+        <el-tooltip content="复制 (Copy)" placement="bottom"><el-button circle size="small" @click="toolbar.copy()" :disabled="!toolbar.hasSelection"><el-icon><CopyDocument /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="粘贴 (Paste)" placement="bottom"><el-button circle size="small" @click="toolbar.paste()" :disabled="!toolbar.isEditMode"><el-icon><Document /></el-icon></el-button></el-tooltip>
+        <el-tooltip content="查找 (Find)" placement="bottom"><el-button circle size="small" @click="toolbar.find()"><el-icon><Search /></el-icon></el-button></el-tooltip>
+        <div class="toolbar-divider" />
+        <el-tooltip content="回滚 (Rollback)" placement="bottom"><el-button circle size="small" @click="toolbar.rollback()" :disabled="!toolbar.hasSelection"><el-icon><Refresh /></el-icon></el-button></el-tooltip>
+        <div class="toolbar-divider" />
         <el-tooltip content="删除 (Delete)" placement="bottom"><el-button circle size="small" type="danger" @click="toolbar.delete()" :disabled="!toolbar.hasSelection"><el-icon><Delete /></el-icon></el-button></el-tooltip>
         <el-tooltip content="撤销 (Undo)" placement="bottom"><el-button circle size="small" @click="toolbar.undo()"><el-icon><RefreshLeft /></el-icon></el-button></el-tooltip>
       </div>
@@ -53,7 +60,7 @@
 import { ref, onMounted, computed, provide, reactive } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { Plus, Edit, Check, Finished, Promotion, Delete, RefreshLeft } from '@element-plus/icons-vue'
+import { Plus, Edit, Check, Finished, Promotion, Delete, RefreshLeft, CopyDocument, Document, Search, Refresh } from '@element-plus/icons-vue'
 import LoginView from './components/LoginView.vue'
 import RecordDetail from './components/RecordDetail.vue'
 import RecordList from './components/RecordList.vue'
@@ -76,6 +83,7 @@ const onTabSearched = (tableId) => { tabInitialized[tableId] = true }
 const toolbar = reactive({
   hasSelection: false, canEditComp: false, canRelease: false, isEditMode: false,
   add: () => {}, update: () => {}, editComp: () => {}, release: () => {}, save: () => {}, delete: () => {}, undo: () => {},
+  copy: () => {}, paste: () => {}, find: () => {}, rollback: () => {},
 })
 provide('toolbar', toolbar)
 
