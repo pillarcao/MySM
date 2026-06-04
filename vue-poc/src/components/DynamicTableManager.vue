@@ -620,12 +620,16 @@ watch(selectedLeftKey, (key) => {
     })
   })
   if (idx >= 0) {
-    tableRef.value.setCurrentRow(list.value[idx])
+    const row = list.value[idx]
+    currentRow.value = row
+    updateToolbarState()
+    emit('row-select', row, config.value.fields, props.tableId)
+    tableRef.value.setCurrentRow(row)
     // Scroll to row
     const body = tableRef.value.$el.querySelector('.el-table__body-wrapper')
     if (body) {
-      const row = body.querySelectorAll('.el-table__row')[idx]
-      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const rowEl = body.querySelectorAll('.el-table__row')[idx]
+      if (rowEl) rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }
 })
