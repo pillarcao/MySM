@@ -24,6 +24,7 @@
         :row-class-name="tableRowClassName"
         highlight-current-row
         @row-click="onRowClick"
+        @row-contextmenu="onContextMenu"
       >
         <el-table-column type="index" width="50">
           <template #header>
@@ -117,16 +118,27 @@
       </el-table>
     </el-card>
 
+    <ContextMenu
+      :visible="ctxMenu.visible"
+      :x="ctxMenu.x"
+      :y="ctxMenu.y"
+      :col="ctxMenu.col"
+      :disabled="ctxDisabled"
+      @action="ctxAction"
+      @close="ctxMenu.visible = false"
+    />
+
     <RefPicker v-model="refPickerVisible" :table-id="refPickerConfig.tableId" :ref-field="refPickerConfig.refField" @select="onRefSelect" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, inject } from 'vue'
+import { ref, reactive, onMounted, computed, watch, inject } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RefPicker from './RefPicker.vue'
 import SearchDialog from './SearchDialog.vue'
+import ContextMenu from './ContextMenu.vue'
 
 const props = defineProps({ tableId: { type: String, required: true }, drillQuery: { type: Object, default: () => ({}) }, showSearch: { type: Boolean, default: true } })
 const emit = defineEmits(['row-select', 'records-change', 'edit-state', 'searched', 'cell-jump'])
@@ -143,13 +155,14 @@ const refPickerVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '', targetRow: null })
 const queryStatus = ref('ALL')
 const currentRow = ref(null)
-const searchDialogVisible = ref(false)
+const ctxMenu = reactive({ visible: false, x: 0, y: 0, col: null })
+const hiddenCols = ref(new Set())
 const editingRow = ref(null)
 const isNewRow = ref(false)
 
 const tableTitle = computed(() => config.value.table?.usTitle || config.value.table?.jpTitle || props.tableId)
 const keyFields = computed(() => config.value.fields.filter(f => f.isKey==='Y' && f.fieldName!=='REL_FLG'))
-const displayColumns = computed(() => config.value.fields.filter(f => f.isDummy==='N'))
+const displayColumns = computed(() => config.value.fields.filter(f => f.isDummy==='N' && !hiddenCols.value.has(f.fieldName)))
 const formFields = computed(() => config.value.fields.filter(f => f.isDummy==='N'))
 
 const canEditComp = computed(() => {
@@ -157,6 +170,22 @@ const canEditComp = computed(() => {
   return (currentRow.value.REL_FLG||'').trim()==='N' && (currentRow.value.COMP_FLG||'').trim()==='N'
 })
 const canRelease = computed(() => currentRow.value && (currentRow.value.REL_FLG||'').trim()==='N')
+
+const ctxDisabled = computed(() => ({
+  edit: !currentRow.value,
+  save: !editingRow.value,
+  editcomp: !canEditComp.value,
+  release: !canRelease.value,
+  delete: !currentRow.value,
+  clear: !currentRow.value,
+  copy: !currentRow.value,
+  paste: !editingRow.value,
+  find: list.value.length === 0,
+  rollback: !currentRow.value || (currentRow.value.REL_FLG || '').trim() !== 'N' || isNewRow.value,
+  forceUnlock: !currentRow.value || !(currentRow.value.LOCK_USER && currentRow.value.LOCK_USER.trim()),
+  sort: !ctxMenu.col,
+  hideCol: !ctxMenu.col
+}))
 
 const isKeyField = (f) => f.isKey==='Y'
 const formatCell = (v) => v ? String(v).trim() : ''
@@ -222,6 +251,38 @@ const updateToolbarState = () => {
 const onRowClick = (row) => {
   currentRow.value = row; updateToolbarState()
   emit('row-select', row, config.value.fields, props.tableId)
+}
+
+const onContextMenu = (row, col, evt) => {
+  evt.preventDefault()
+  if (row) { currentRow.value = row; updateToolbarState() }
+  ctxMenu.visible = true
+  ctxMenu.x = evt.clientX
+  ctxMenu.y = evt.clientY
+  ctxMenu.col = col
+}
+
+const ctxAction = (action) => {
+  ctxMenu.visible = false
+  switch (action) {
+    case 'add': toolbar.add(); break
+    case 'update': if (toolbar.hasSelection) toolbar.update(); break
+    case 'save': if (toolbar.isEditMode) toolbar.save(); break
+    case 'editcomp': if (toolbar.canEditComp) toolbar.editComp(); break
+    case 'release': if (toolbar.canRelease) toolbar.release(); break
+    case 'delete': if (toolbar.hasSelection) toolbar.delete(); break
+    case 'undo': toolbar.undo(); break
+    case 'clear': handleClear(); break
+    case 'copy': handleCopy(); break
+    case 'paste': handlePaste(); break
+    case 'find': handleFind(); break
+    case 'rollback': handleRollback(); break
+    case 'forceUnlock': handleForceUnlock(); break
+    case 'sort-asc': list.value.sort((a,b) => String(a[ctxMenu.col?.property]||'').localeCompare(String(b[ctxMenu.col?.property]||''))); break
+    case 'sort-desc': list.value.sort((a,b) => String(b[ctxMenu.col?.property]||'').localeCompare(String(a[ctxMenu.col?.property]||''))); break
+    case 'hide-col': if (ctxMenu.col?.property) hiddenCols.value.add(ctxMenu.col.property); break
+    case 'show-all': hiddenCols.value.clear(); break
+  }
 }
 
 const handleAdd = () => {
@@ -316,6 +377,157 @@ const handleDelete = async () => {
     await axios.post(`/api/dynamic/${props.tableId}/delete`, currentRow.value)
     ElMessage.success('删除成功'); doSearch()
   } catch (err) { if (err!=='cancel') ElMessage.error('删除失败: '+(err.response?.data?.error||err.message)) }
+}
+
+const handleClear = () => {
+  if (editingRow.value) {
+    formFields.value.forEach(f => {
+      if (f.isKey !== 'Y' || isNewRow.value) {
+        editingRow.value[f.fieldName] = f.fieldType === 'NUMBER' ? 0 : ''
+      }
+    })
+    ElMessage.info('已清除')
+  } else if (currentRow.value) {
+    editingRow.value = currentRow.value
+    isNewRow.value = false
+    editingRow.value.COMP_FLG = 'N'
+    editingRow.value.REL_FLG = 'N'
+    formFields.value.forEach(f => {
+      if (f.isKey !== 'Y') {
+        editingRow.value[f.fieldName] = f.fieldType === 'NUMBER' ? 0 : ''
+      }
+    })
+    updateToolbarState()
+    ElMessage.info('已清除')
+  }
+}
+
+const handleCopy = async () => {
+  if (!currentRow.value) return
+  const parts = formFields.value
+    .filter(f => f.isDummy !== 'Y')
+    .map(f => {
+      const val = currentRow.value[f.fieldName]
+      return (val != null ? String(val).trim() : '')
+    })
+  const text = parts.join('\t')
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (e) {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    ElMessage.success('已复制到剪贴板')
+  }
+}
+
+const handlePaste = async () => {
+  if (!editingRow.value) {
+    ElMessage.warning('请先进入编辑模式')
+    return
+  }
+  try {
+    const text = await navigator.clipboard.readText()
+    const values = text.split('\t')
+    const visibleFields = formFields.value.filter(f => f.isDummy !== 'Y')
+    for (let i = 0; i < Math.min(values.length, visibleFields.length); i++) {
+      const f = visibleFields[i]
+      if (f.isKey === 'Y' && !isNewRow.value) continue
+      const val = values[i].trim()
+      if (f.fieldType === 'NUMBER') {
+        const num = parseFloat(val)
+        if (!isNaN(num)) editingRow.value[f.fieldName] = num
+      } else {
+        editingRow.value[f.fieldName] = val
+      }
+    }
+    ElMessage.success('已粘贴')
+  } catch (e) {
+    ElMessage.warning('无法读取剪贴板')
+  }
+}
+
+const handleFind = async () => {
+  if (list.value.length === 0) return
+  try {
+    const { value: searchText } = await ElMessageBox.prompt('请输入搜索文本', '查找', {
+      confirmButtonText: '查找下一个',
+      cancelButtonText: '取消',
+      inputPlaceholder: '输入要搜索的文本...'
+    })
+    if (!searchText || !searchText.trim()) return
+    const text = searchText.trim().toLowerCase()
+    const startIdx = currentRow.value
+      ? Math.max(0, list.value.indexOf(currentRow.value))
+      : -1
+    for (let offset = 0; offset < list.value.length; offset++) {
+      const idx = (startIdx + offset + 1) % list.value.length
+      const row = list.value[idx]
+      const match = formFields.value.some(f => {
+        const val = row[f.fieldName]
+        return val != null && String(val).toLowerCase().includes(text)
+      })
+      if (match) {
+        currentRow.value = row
+        updateToolbarState()
+        tableRef.value.setCurrentRow(row)
+        emit('row-select', row, config.value.fields, props.tableId)
+        setTimeout(() => {
+          const body = tableRef.value.$el.querySelector('.el-table__body-wrapper')
+          if (body) {
+            const rowEl = body.querySelectorAll('.el-table__row')[idx]
+            if (rowEl) rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 50)
+        return
+      }
+    }
+    ElMessage.info('未找到匹配项')
+  } catch (e) {
+    // User cancelled
+  }
+}
+
+const handleRollback = async () => {
+  if (!currentRow.value) return
+  try {
+    await ElMessageBox.confirm('确认回滚？这将删除当前编辑记录并恢复 Release 版本。', '提示', { type: 'warning' })
+    const keys = {}
+    keyFields.value.forEach(f => { keys[f.fieldName] = currentRow.value[f.fieldName] })
+    await axios.post(`/api/rollback/${props.tableId}`, keys)
+    ElMessage.success('回滚成功')
+    editingRow.value = null
+    isNewRow.value = false
+    currentRow.value = null
+    updateToolbarState()
+    doSearch()
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('回滚失败: ' + (err.response?.data?.error || err.message))
+  }
+}
+
+const handleForceUnlock = async () => {
+  if (!currentRow.value) return
+  try {
+    await ElMessageBox.confirm('确认强制解锁该记录？', '提示', { type: 'warning' })
+    const keys = {}
+    keyFields.value.forEach(f => {
+      if (f.fieldName !== 'REL_FLG') {
+        keys[f.fieldName] = currentRow.value[f.fieldName]
+      }
+    })
+    await axios.post(`/api/force-unlock/${props.tableId}`, keys)
+    ElMessage.success('解锁成功')
+    doSearch()
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('解锁失败: ' + (err.response?.data?.error || err.message))
+  }
 }
 
 const colJump = (f) => {

@@ -28,6 +28,10 @@ public class RollbackService {
                 .filter(f -> "Y".equals(f.getIsKey()) && !"REL_FLG".equals(f.getFieldName()))
                 .collect(Collectors.toList());
 
+        if (keyFields.isEmpty()) {
+            throw new IllegalArgumentException("表 " + tableId + " 未配置业务主键");
+        }
+
         // 1. Check editable record exists (REL_FLG='N')
         StringBuilder whereN = new StringBuilder("\"REL_FLG\" = 'N'");
         List<Object> keyValues = new ArrayList<>();
