@@ -110,15 +110,45 @@ public class RouteBatchService {
                 .filter(f -> !"Y".equals(f.getIsDummy()) && !"Y".equals(f.getIsAuto()))
                 .collect(Collectors.toList());
 
-        // Build source WHERE: ROUTE_ID=? AND ROUTE_VER=? AND REL_FLG='Y'
-        String srcWhere = "\"ROUTE_ID\" = ? AND \"ROUTE_VER\" = ? AND \"REL_FLG\" = 'Y'";
+        // Determine route id/ver column names (ROUTE_ID or SPLIT_ROUTE_ID)
+        String idCol = "ROUTE_ID";
+        String verCol = "ROUTE_VER";
+        if ("BROUTECNCT".equals(tableName)) {
+            idCol = "SPLIT_ROUTE_ID";
+            verCol = "SPLIT_ROUTE_VER";
+        }
+
+        // Build source WHERE
+        String srcWhere = "\"" + idCol + "\" = ? AND \"" + verCol + "\" = ? AND \"REL_FLG\" = 'Y'";
         List<Map<String, Object>> srcRows = jdbcTemplate.queryForList(
                 "SELECT * FROM " + tableName + " WHERE " + srcWhere, srcRouteId, srcRouteVer);
         if (srcRows.isEmpty()) return 0;
 
-        // Build INSERT for each source row with new ROUTE_ID/ROUTE_VER
+        // Build INSERT for each source row with new route id/ver
         int count = 0;
         for (Map<String, Object> srcRow : srcRows) {
+            // Delete existing N record with same business keys to avoid PK conflict
+            List<SmFieldDef> dbKeyFields = fields.stream()
+                    .filter(f -> "Y".equals(f.getIsKey()) && !"REL_FLG".equals(f.getFieldName()))
+                    .collect(Collectors.toList());
+            if (!dbKeyFields.isEmpty()) {
+                StringBuilder delWhere = new StringBuilder();
+                List<Object> delVals = new ArrayList<>();
+                for (SmFieldDef kf : dbKeyFields) {
+                    if (delWhere.length() > 0) delWhere.append(" AND ");
+                    delWhere.append("\"").append(kf.getFieldName()).append("\" = ?");
+                    if (idCol.equals(kf.getFieldName())) {
+                        delVals.add(newRouteId);
+                    } else if (verCol.equals(kf.getFieldName())) {
+                        delVals.add(newRouteVer);
+                    } else {
+                        delVals.add(srcRow.get(kf.getFieldName()));
+                    }
+                }
+                jdbcTemplate.update("DELETE FROM " + tableName
+                        + " WHERE " + delWhere + " AND \"REL_FLG\" = 'N'", delVals.toArray());
+            }
+
             List<String> columns = new ArrayList<>();
             List<Object> values = new ArrayList<>();
             List<String> placeholders = new ArrayList<>();
@@ -126,10 +156,21 @@ public class RouteBatchService {
             for (SmFieldDef f : bizFields) {
                 String col = f.getFieldName();
                 Object val = srcRow.get(col);
-                if ("ROUTE_ID".equals(col)) {
+                if (idCol.equals(col)) {
                     val = newRouteId;
-                } else if ("ROUTE_VER".equals(col)) {
+                } else if (verCol.equals(col)) {
                     val = newRouteVer;
+                }
+                // Also replace SUB_ROUTE_ID/RET_ROUTE_ID if they reference the source route
+                if ("BROUTECNCT".equals(tableName)) {
+                    if (("SUB_ROUTE_ID".equals(col) || "RET_ROUTE_ID".equals(col))
+                            && srcRouteId.equals(val != null ? val.toString().trim() : "")) {
+                        val = newRouteId;
+                    }
+                    if (("SUB_ROUTE_VER".equals(col) || "RET_ROUTE_VER".equals(col))
+                            && srcRouteVer.equals(val != null ? val.toString().trim() : "")) {
+                        val = newRouteVer;
+                    }
                 }
                 if (val == null) {
                     if ("NUMBER".equals(f.getDbType())) val = 0;
@@ -168,8 +209,16 @@ public class RouteBatchService {
 
         List<SmFieldDef> fields = fieldDefMapper.findByTableId(tableId);
 
+        // Determine route id/ver column names
+        String idCol = "ROUTE_ID";
+        String verCol = "ROUTE_VER";
+        if ("BROUTECNCT".equals(bTableName)) {
+            idCol = "SPLIT_ROUTE_ID";
+            verCol = "SPLIT_ROUTE_VER";
+        }
+
         // Find B-table N record
-        String bWhere = "\"ROUTE_ID\" = ? AND \"ROUTE_VER\" = ? AND \"REL_FLG\" = 'N'";
+        String bWhere = "\"" + idCol + "\" = ? AND \"" + verCol + "\" = ? AND \"REL_FLG\" = 'N'";
         List<Map<String, Object>> bRows = jdbcTemplate.queryForList(
                 "SELECT * FROM " + bTableName + " WHERE " + bWhere, routeId, routeVer);
         if (bRows.isEmpty()) return;
@@ -242,9 +291,9 @@ public class RouteBatchService {
                     + ") VALUES (" + String.join(", ", phs) + ")", vals.toArray());
         }
 
-        // Update B-table: delete ALL old Y records for this ROUTE_ID, then update N→Y
+        // Update B-table: delete ALL old Y records for this route, then update N→Y
         jdbcTemplate.update("DELETE FROM " + bTableName
-                + " WHERE \"ROUTE_ID\" = ? AND \"REL_FLG\" = 'Y'", routeId);
+                + " WHERE \"" + idCol + "\" = ? AND \"REL_FLG\" = 'Y'", routeId);
         jdbcTemplate.update("UPDATE " + bTableName
                 + " SET \"REL_FLG\" = 'Y', \"COMP_FLG\" = 'Y' WHERE " + bWhere, routeId, routeVer);
     }
