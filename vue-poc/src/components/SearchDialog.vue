@@ -69,7 +69,7 @@ const visible = computed({
 const loading = ref(false)
 const config = ref({ table: null, fields: [] })
 const searchForm = reactive({})
-const searchStatus = ref('ALL')
+const searchStatus = ref('EDIT')
 
 const title = computed(() => config.value.table?.usTitle || config.value.table?.jpTitle || props.tableId)
 

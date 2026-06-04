@@ -154,7 +154,7 @@ const queryForm = ref({})
 const dropdownOptions = ref({})
 const refPickerVisible = ref(false)
 const refPickerConfig = ref({ tableId: '', refField: '', targetField: '', targetRow: null })
-const queryStatus = ref('ALL')
+const queryStatus = ref('EDIT')
 const currentRow = ref(null)
 const searchDialogVisible = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, col: null })
@@ -634,7 +634,7 @@ const load = async () => {
   // Apply drill-down query params if present
   const q = props.drillQuery
   if (q && Object.keys(q).length > 0) {
-    queryStatus.value = 'ALL'
+    queryStatus.value = 'EDIT'
     Object.keys(q).forEach(k => { queryForm.value[k] = q[k] })
     doSearch()
     emit('searched')
