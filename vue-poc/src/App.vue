@@ -37,7 +37,7 @@
 
       <div class="body-area">
         <div class="left-panel">
-          <RecordList :table-id="activeTabId" :records="recordKeys" @select="onRecordSelect" />
+          <RecordList :table-id="activeTabId" :records="recordKeys" @select="onRecordSelect" @group-filter="onGroupFilter" />
         </div>
         <div class="center-panel">
           <div class="tab-strip" v-if="openTabs.length > 0">
@@ -118,6 +118,9 @@ const handleLogout = () => { localStorage.removeItem('sm_token'); delete axios.d
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }
 const onRecordsChange = (keys) => { recordKeys.value = keys || [] }
 const onRecordSelect = (rec) => { selectedLeftKey.value = rec }
+const onGroupFilter = ({ field, value }) => {
+  drillQueries.value[activeTabId.value] = { [field]: value }
+}
 const onEditState = (state) => { isNewRecord.value = state.isNewRow }
 const onDrillDown = ({ tableId, label, query }) => { openTable(tableId, label); drillQueries.value[tableId] = query }
 

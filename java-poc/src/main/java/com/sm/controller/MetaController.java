@@ -40,8 +40,8 @@ public class MetaController {
     }
 
     @GetMapping("/{tableId}/tree")
-    public List<Map<String, Object>> getTree(@PathVariable String tableId,
-                                              @RequestParam(defaultValue = "ALL") String status) {
+    public Map<String, Object> getTree(@PathVariable String tableId,
+                                        @RequestParam(defaultValue = "ALL") String status) {
         return metaService.getTreeData(tableId, status);
     }
 }

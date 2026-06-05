@@ -41,9 +41,9 @@ public class MetaService {
         return drillDefMapper.findBySourceTableId(tableId);
     }
 
-    public List<Map<String, Object>> getTreeData(String tableId, String status) {
+    public Map<String, Object> getTreeData(String tableId, String status) {
         SmTableDef table = tableDefMapper.findByTableId(tableId);
-        if (table == null) return Collections.emptyList();
+        if (table == null) return Collections.emptyMap();
         List<SmFieldDef> fields = fieldDefMapper.findByTableId(tableId);
 
         // Find tree fields (treeLevel >= 0) and key fields for label
@@ -52,11 +52,15 @@ public class MetaService {
                 .sorted(Comparator.comparingInt(SmFieldDef::getTreeLevel))
                 .collect(Collectors.toList());
 
+        Map<String, Object> result = new LinkedHashMap<>();
         if (treeFields.isEmpty()) {
-            // No grouping: return flat list
-            return buildFlatTree(table, fields, status);
+            result.put("tree", buildFlatTree(table, fields, status));
+            result.put("treeField", "");
+        } else {
+            result.put("tree", buildGroupedTree(table, fields, treeFields, status));
+            result.put("treeField", treeFields.get(0).getFieldName());
         }
-        return buildGroupedTree(table, fields, treeFields, status);
+        return result;
     }
 
     private List<Map<String, Object>> buildFlatTree(SmTableDef table, List<SmFieldDef> fields, String status) {

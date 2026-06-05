@@ -37,11 +37,12 @@ const props = defineProps({
   records: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'group-filter'])
 
 const treeRef = ref(null)
 const treeData = ref([])
 const tableTitle = ref('记录一览')
+const treeField = ref('')
 
 const fetchTableTitle = async () => {
   if (!props.tableId) { tableTitle.value = '记录一览'; return }
@@ -68,7 +69,9 @@ const totalCount = computed(() => {
 const fetchTree = async () => {
   if (!props.tableId) { treeData.value = []; return }
   try {
-    treeData.value = (await axios.get(`/api/meta/${props.tableId}/tree?status=ALL`)).data
+    const res = await axios.get(`/api/meta/${props.tableId}/tree?status=ALL`)
+    treeData.value = res.data.tree || []
+    treeField.value = res.data.treeField || ''
   } catch (e) {
     console.error('fetchTree failed:', e)
     treeData.value = []
@@ -78,6 +81,9 @@ const fetchTree = async () => {
 const onNodeClick = (data) => {
   if (data.record) {
     emit('select', data.record)
+  } else if (treeField.value) {
+    // Group click: filter center table by group value
+    emit('group-filter', { field: treeField.value, value: data.label })
   }
 }
 
