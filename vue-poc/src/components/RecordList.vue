@@ -1,6 +1,6 @@
 <template>
   <div class="record-list">
-    <div class="panel-title">记录一览 ({{ totalCount }})</div>
+    <div class="panel-title">{{ tableTitle }} ({{ totalCount }})</div>
     <div class="tree-body">
       <el-tree
         ref="treeRef"
@@ -41,6 +41,17 @@ const emit = defineEmits(['select'])
 
 const treeRef = ref(null)
 const treeData = ref([])
+const tableTitle = ref('记录一览')
+
+const fetchTableTitle = async () => {
+  if (!props.tableId) { tableTitle.value = '记录一览'; return }
+  try {
+    const res = await axios.get(`/api/meta/${props.tableId}`)
+    tableTitle.value = res.data.table?.usTitle || res.data.table?.jpTitle || props.tableId
+  } catch (e) {
+    tableTitle.value = props.tableId
+  }
+}
 
 const totalCount = computed(() => {
   let count = 0
@@ -71,7 +82,7 @@ const onNodeClick = (data) => {
 }
 
 // Reload tree when table changes
-watch(() => props.tableId, fetchTree, { immediate: true })
+watch(() => props.tableId, () => { fetchTableTitle(); fetchTree(); }, { immediate: true })
 
 // Also reload when records change (after save/delete etc.)
 watch(() => props.records, () => {
