@@ -20,6 +20,7 @@ public class EditCompService {
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
     private final HistoryService historyService;
+    private final com.sm.util.UserContext userContext;
 
     @Transactional
     public void editComp(String tableId, Map<String, Object> keys) {
@@ -43,7 +44,7 @@ public class EditCompService {
 
         // 4. Update COMP_FLG='Y' with history shift (slot1=EditComp, old→slots 2-5)
         String sql = "UPDATE " + tableName + " SET \"COMP_FLG\" = 'Y', "
-                + historyService.shiftHistorySQL("EditComp", "SYSTEM") + " WHERE " + where;
+                + historyService.shiftHistorySQL("EditComp", userContext.getCurrentUser()) + " WHERE " + where;
         jdbcTemplate.update(sql, values.toArray());
     }
 

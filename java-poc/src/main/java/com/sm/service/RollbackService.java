@@ -19,6 +19,8 @@ public class RollbackService {
     private final SmTableDefMapper tableDefMapper;
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
+    private final HistoryService historyService;
+    private final com.sm.util.UserContext userContext;
 
     @Transactional
     public void rollback(String tableId, Map<String, Object> keys) {
@@ -93,17 +95,17 @@ public class RollbackService {
         // Add B-table control fields
         addField(columns, values, placeholders, "REL_FLG", "Y");
         addField(columns, values, placeholders, "COMP_FLG", "Y");
-        addField(columns, values, placeholders, "CRE_USER", dRecord.getOrDefault("CRE_USER", "SYSTEM"));
+        String user = userContext.getCurrentUser();
+        addField(columns, values, placeholders, "CRE_USER", dRecord.getOrDefault("CRE_USER", user));
         addField(columns, values, placeholders, "CRE_DATE", dRecord.getOrDefault("CRE_DATE", new Timestamp(System.currentTimeMillis())));
-        addField(columns, values, placeholders, "OWNER", dRecord.getOrDefault("OWNER", "SYSTEM"));
+        addField(columns, values, placeholders, "OWNER", dRecord.getOrDefault("OWNER", user));
         addField(columns, values, placeholders, "OWNERG", dRecord.getOrDefault("OWNERG", ""));
         addField(columns, values, placeholders, "PERMISSION", dRecord.getOrDefault("PERMISSION", "PUBLIC    "));
         addField(columns, values, placeholders, "LOCK_USER", "");
         addField(columns, values, placeholders, "LOCK_TIME", null);
         addField(columns, values, placeholders, "COMMENT", dRecord.getOrDefault("COMMENT", ""));
-        addField(columns, values, placeholders, "LAST_DATE1", new Timestamp(System.currentTimeMillis()));
-        addField(columns, values, placeholders, "LAST_ACT1", "ROLLBACK");
-        addField(columns, values, placeholders, "LAST_USER1", "SYSTEM");
+        // History: slot 1 = Rollback, slots 2-5 = empty
+        historyService.addInitHistory(columns, values, placeholders, "Rollback", user);
 
         String sql = "INSERT INTO " + bTableName + " (" + String.join(", ", columns)
                 + ") VALUES (" + String.join(", ", placeholders) + ")";

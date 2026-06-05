@@ -21,6 +21,7 @@ public class RouteBatchService {
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
     private final HistoryService historyService;
+    private final com.sm.util.UserContext userContext;
 
     /**
      * Route batch operation tables (from original MFC system RouteCopy/RouteVerUp/RouteRelease).
@@ -186,7 +187,7 @@ public class RouteBatchService {
             addCtrlField(columns, values, placeholders, "REL_FLG", "N");
             addCtrlField(columns, values, placeholders, "COMP_FLG", srcRow.getOrDefault("COMP_FLG", "N"));
             addCtrlField(columns, values, placeholders, "CRE_DATE", new Timestamp(System.currentTimeMillis()));
-            addCtrlField(columns, values, placeholders, "CRE_USER", "SYSTEM");
+            addCtrlField(columns, values, placeholders, "CRE_USER", userContext.getCurrentUser());
             addCtrlField(columns, values, placeholders, "OWNER", srcRow.getOrDefault("OWNER", "SYSTEM"));
             addCtrlField(columns, values, placeholders, "OWNERG", srcRow.getOrDefault("OWNERG", ""));
             addCtrlField(columns, values, placeholders, "PERMISSION", srcRow.getOrDefault("PERMISSION", "PUBLIC    "));
@@ -194,7 +195,7 @@ public class RouteBatchService {
             addCtrlField(columns, values, placeholders, "LOCK_TIME", null);
             addCtrlField(columns, values, placeholders, "COMMENT", srcRow.getOrDefault("COMMENT", ""));
             // History: slot 1 = Create (copy), slots 2-5 = empty
-            historyService.addInitHistory(columns, values, placeholders, "Create", "SYSTEM");
+            historyService.addInitHistory(columns, values, placeholders, "Create", userContext.getCurrentUser());
 
             String sql = "INSERT INTO " + tableName + " (" + String.join(", ", columns)
                     + ") VALUES (" + String.join(", ", placeholders) + ")";

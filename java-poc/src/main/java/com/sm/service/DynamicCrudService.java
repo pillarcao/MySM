@@ -22,6 +22,7 @@ public class DynamicCrudService {
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
     private final HistoryService historyService;
+    private final com.sm.util.UserContext userContext;
 
     public List<Map<String, Object>> list(String tableId, String status) {
         return search(tableId, status, new HashMap<>());
@@ -138,14 +139,14 @@ public class DynamicCrudService {
         }
         // Lock either N or Y record: try N first, then Y
         String sqlN = "UPDATE " + tableName
-                + " SET \"LOCK_USER\" = 'SYSTEM', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where;
+                + " SET \"LOCK_USER\" = '" + userContext.getCurrentUser() + "', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where;
         if (tableName.startsWith("B")) {
             sqlN += " AND \"REL_FLG\" = 'N'";
         }
         int updated = jdbcTemplate.update(sqlN, values.toArray());
         if (updated == 0 && tableName.startsWith("B")) {
             String sqlY = "UPDATE " + tableName
-                    + " SET \"LOCK_USER\" = 'SYSTEM', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where
+                    + " SET \"LOCK_USER\" = '" + userContext.getCurrentUser() + "', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where
                     + " AND \"REL_FLG\" = 'Y'";
             jdbcTemplate.update(sqlY, values.toArray());
         }
@@ -194,7 +195,7 @@ public class DynamicCrudService {
             }
         }
         if (tableName.startsWith("B")) {
-            setParts.add(historyService.shiftHistorySQL("Save", "SYSTEM"));
+            setParts.add(historyService.shiftHistorySQL("Save", userContext.getCurrentUser()));
         }
 
         String sql = "UPDATE " + tableName + " SET " + String.join(", ", setParts) + " WHERE " + where;
@@ -287,8 +288,8 @@ public class DynamicCrudService {
         String[][] defaults = {
                 {"COMP_FLG", "N"},
                 {"CRE_DATE", "T"},
-                {"CRE_USER", "SYSTEM"},
-                {"OWNER", "SYSTEM"},
+                {"CRE_USER", "U"},
+                {"OWNER", "U"},
                 {"OWNERG", ""},
                 {"PERMISSION", "PUBLIC    "},
                 {"LOCK_USER", ""},
@@ -300,6 +301,8 @@ public class DynamicCrudService {
                 columns.add(quoted);
                 if ("T".equals(def[1])) {
                     values.add(new Timestamp(System.currentTimeMillis()));
+                } else if ("U".equals(def[1])) {
+                    values.add(userContext.getCurrentUser());
                 } else {
                     values.add(def[1]);
                 }
@@ -308,7 +311,7 @@ public class DynamicCrudService {
         }
         // History: slot 1 = Create, slots 2-5 = empty
         if (!columns.contains("\"LAST_DATE1\"")) {
-            historyService.addInitHistory(columns, values, placeholders, "Create", "SYSTEM");
+            historyService.addInitHistory(columns, values, placeholders, "Create", userContext.getCurrentUser());
         }
     }
 }

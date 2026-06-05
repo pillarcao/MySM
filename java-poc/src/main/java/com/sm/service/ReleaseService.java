@@ -24,6 +24,7 @@ public class ReleaseService {
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
     private final HistoryService historyService;
+    private final com.sm.util.UserContext userContext;
 
     private static final Set<String> CONTROL_FIELDS;
     static {
@@ -201,7 +202,7 @@ public class ReleaseService {
         }
 
         String sql = "UPDATE " + bTableName + " SET \"REL_FLG\" = 'Y', \"COMP_FLG\" = 'Y', "
-                + historyService.shiftHistorySQL("Release", "SYSTEM") + " WHERE " + where;
+                + historyService.shiftHistorySQL("Release", userContext.getCurrentUser()) + " WHERE " + where;
         jdbcTemplate.update(sql, values.toArray());
     }
 
