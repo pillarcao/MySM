@@ -2,9 +2,9 @@
 
 > 目标：将现有 MFC 客户端 + C 服务端 + IBM MQ + DB2 架构，迁移为 Vue3 Web 客户端 + Spring Boot Java 服务端 + DB2 架构。
 >
-> 状态：第四阶段 POC 已完成（JWT 登录鉴权验证通过）
+> 状态：第五阶段已完成（88 张表配置化上线 + 全部核心功能实现）
 >
-> 更新日期：2026-05-21
+> 更新日期：2026-06-05
 
 ---
 
@@ -183,9 +183,9 @@ COMMENT         CHAR(128)
 
 ---
 
-### 第五阶段：批量迁移剩余表（POC 验证已完成）
+### 第五阶段：批量迁移 + 全功能实现（已完成）
 
-**目标**：验证"新增一张表只需配置 DDL + SM 配置数据，前后端零代码"
+**目标**：88 张表全部配置上线，实现与 MFC 原系统对等的全部核心操作
 
 | 步骤 | 内容 | 产出 | 状态 |
 |------|------|------|------|
@@ -193,41 +193,61 @@ COMMENT         CHAR(128)
 | 5.2 | 修复 DynamicCrudService / ReleaseService 列名保留字问题 | SQL 列名统一加双引号 | ✅ 已完成 |
 | 5.3 | 修复前端→后端字段名映射问题 | 移除 `toUnderscoreMap`，前端直接传数据库列名 | ✅ 已完成 |
 | 5.4 | BCALND 端到端验证：CRUD + Release | 零代码全程通过 | ✅ 已完成 |
+| 5.5 | 88 张表批量配置上线 | DDL + SM_TABLE_DEF + SM_FIELD_DEF + SM_CHECK_DEF | ✅ 已完成 |
+| 5.6 | SM_CHECK_DEF 校验引擎 | NOTNULL/STAT_N/STAT_Y/LOCK_FREE/COMP_N/KEY/STRING | ✅ 已完成 |
+| 5.7 | UNDO 撤销栈 | Add/Delete/Update 三类操作可逆 | ✅ 已完成 |
+| 5.8 | Rollback (D→B 恢复) | 删除编辑态记录，保留 Release 版本 | ✅ 已完成 |
+| 5.9 | ForceUnlock | 管理员强制解锁 | ✅ 已完成 |
+| 5.10 | EditComp (编辑完成) | COMP_FLG N→Y 状态流转 | ✅ 已完成 |
+| 5.11 | 5 层操作历史 (shift-register) | LAST_DATE1~5 / LAST_ACT1~5 / LAST_USER1~5 自动滚动 | ✅ 已完成 |
+| 5.12 | Route 批量操作 | Copy / VerUp / Release（含 BROUTECNCT 等关联表） | ✅ 已完成 |
+| 5.13 | 左侧树形分组面板 | SM_FIELD_DEF.TREE_LEVEL 配置驱动 | ✅ 已完成 |
+| 5.14 | 下钻导航 (Drill) | SM_DRILL_DEF 配置，表间跳转 | ✅ 已完成 |
+| 5.15 | Jump Button (表头/单元格跳转) | SM_FIELD_DEF.JUMP_BUTTON 配置 | ✅ 已完成 |
+| 5.16 | 右键菜单 | 6 种上下文操作 | ✅ 已完成 |
+| 5.17 | SELECT 下拉框数据源 | SYSDATA 表 + `/api/meta/dropdown` 接口 | ✅ 已完成 |
+| 5.18 | SYSDATA CRUD 管理 | 系统参数表的增删查改 | ✅ 已完成 |
 
 **关键实现细节**：
 
 - 新增表只需三步：
-  1. `schema.sql` 中增加 B 表（含 21 个控制字段）和 D 表（不含控制字段）
-  2. `data.sql` 中插入 `SM_TABLE_DEF` 和 `SM_FIELD_DEF` 配置
+  1. `schema.sql` 中增加 B 表（含 25 个控制字段）和 D 表（不含控制字段）
+  2. `data.sql` 中插入 `SM_TABLE_DEF`、`SM_FIELD_DEF`、`SM_CHECK_DEF` 配置
   3. 重启后前后端自动识别并渲染
 - SQL 列名统一加双引号（`"DATE"`、`"REL_FLG"` 等），兼容 H2/DB2 保留字
 - 前端表单字段名直接使用数据库列名，后端不再做 camelCase → underscore 转换
+- `ValidationService` 根据 `SM_CHECK_DEF` 配置在 SAVE/RELEASE/DELETE/EDITCOMP 时自动校验
+- `HistoryService` 实现 5 层 shift-register 操作历史，与 MFC 原系统一致
+- `RouteBatchService` 硬编码 Route 关联表列表，支持 Copy/VerUp/Release 批量操作
+- 前端组件：`DynamicTableManager`（主视图）、`RecordList`（左面板）、`RecordDetail`（右面板）、`ContextMenu`、`SearchDialog`、`RefPicker`、`RouteCopyDialog`
 
-**已验证场景**：
-- BCALND：插入 E → Release → B 表变 R、DCALND 同步 → 修改 E → 再次 Release → DCALND 更新为修订版
-- 全程未修改任何 Java/Vue 源码，仅通过配置生效
-
-**当前状态**：✅ POC 验证已完成（~85 张表批量迁移可参照此模式执行）
+**当前状态**：✅ 已完成（88 张表全部上线，核心功能与 MFC 原系统对等）
 
 ---
 
-### 第六阶段：切换与下线（预计 1 周）
+### 第六阶段：生产就绪 + 切换与下线
 
-| 步骤 | 内容 |
-|------|------|
-| 6.1 | 新旧系统并行运行 1~2 周，用户可同时访问 |
-| 6.2 | 通过 Nginx/网关层按用户或按表灰度切流 |
-| 6.3 | 旧系统 MFC Client 和 C Server 下线 |
+**目标**：完成 DB2 对接、生产加固，并灰度切换下线旧系统
+
+| 步骤 | 内容 | 状态 |
+|------|------|------|
+| 6.1 | DB2 对接：将 H2 schema 迁移到真实 DB2 环境，验证 SQL 兼容性 | ⏳ 待开始 |
+| 6.2 | 生产加固：日志、异常处理、并发锁冲突、Session 超时 | ⏳ 待开始 |
+| 6.3 | 系统化测试：复杂表（BPROD 等）端到端回归验证 | ⏳ 待开始 |
+| 6.4 | 新旧系统并行运行 1~2 周，用户可同时访问 | ⏳ 待开始 |
+| 6.5 | 通过 Nginx/网关层按用户或按表灰度切流 | ⏳ 待开始 |
+| 6.6 | 旧系统 MFC Client 和 C Server 下线 | ⏳ 待开始 |
 
 **当前状态**：⏳ 待开始
 
 ---
 
-## 五、POC 文件结构
+## 五、项目文件结构
 
 ```
 MySM/
 ├── PLAN.md                    ← 本文件
+├── README.md                  ← 快速启动 + 新增表指南
 │
 ├── java-poc/                  ← Spring Boot 后端
 │   ├── pom.xml
@@ -235,35 +255,53 @@ MySM/
 │       ├── java/com/sm/
 │       │   ├── SmPocApplication.java
 │       │   ├── entity/
-│       │   │   ├── BaseEntity.java          ← 21 个通用控制字段
-│       │   │   ├── BCode.java               ← BCODE 业务实体（第一阶段）
+│       │   │   ├── BaseEntity.java          ← 25 个通用控制字段
+│       │   │   ├── BCode.java               ← BCODE 业务实体
 │       │   │   ├── SmTableDef.java          ← SM_TABLE_DEF 实体
-│       │   │   └── SmFieldDef.java          ← SM_FIELD_DEF 实体
+│       │   │   ├── SmFieldDef.java          ← SM_FIELD_DEF 实体
+│       │   │   ├── SmCheckDef.java          ← SM_CHECK_DEF 实体
+│       │   │   └── SmDrillDef.java          ← SM_DRILL_DEF 实体
 │       │   ├── mapper/
 │       │   │   ├── BCodeMapper.java
 │       │   │   ├── SmTableDefMapper.java
-│       │   │   └── SmFieldDefMapper.java
+│       │   │   ├── SmFieldDefMapper.java
+│       │   │   ├── SmCheckDefMapper.java
+│       │   │   └── SmDrillDefMapper.java
 │       │   ├── service/
 │       │   │   ├── BCodeService.java
 │       │   │   ├── MetaService.java         ← 获取表配置元数据
-│       │   │   ├── DynamicCrudService.java  ← 通用 CRUD（第二/五阶段）
-│       │   │   └── ReleaseService.java      ← B→D Release（第三阶段）
+│       │   │   ├── DynamicCrudService.java  ← 通用 CRUD
+│       │   │   ├── ReleaseService.java      ← B→D Release
+│       │   │   ├── RollbackService.java     ← D→B Rollback
+│       │   │   ├── EditCompService.java     ← 编辑完成
+│       │   │   ├── ForceUnlockService.java  ← 强制解锁
+│       │   │   ├── HistoryService.java      ← 5 层操作历史
+│       │   │   ├── RouteBatchService.java   ← Route 批量操作
+│       │   │   └── ValidationService.java   ← SM_CHECK_DEF 校验引擎
+│       │   ├── exception/
+│       │   │   ├── ValidationException.java
+│       │   │   └── GlobalExceptionHandler.java
 │       │   ├── security/
-│       │   │   ├── SecurityConfig.java      ← Spring Security 配置（第四阶段）
-│       │   │   ├── JwtAuthenticationFilter.java  ← JWT 过滤器（第四阶段）
-│       │   │   └── UserDetailsServiceImpl.java   ← BUSER 鉴权（第四阶段）
+│       │   │   ├── SecurityConfig.java
+│       │   │   ├── JwtAuthenticationFilter.java
+│       │   │   └── UserDetailsServiceImpl.java
 │       │   ├── util/
-│       │   │   └── JwtUtil.java             ← JWT 生成/解析（第四阶段）
+│       │   │   ├── JwtUtil.java
+│       │   │   └── UserContext.java         ← 获取当前登录用户
 │       │   └── controller/
 │       │       ├── BCodeController.java
 │       │       ├── MetaController.java
 │       │       ├── DynamicCrudController.java
 │       │       ├── ReleaseController.java
-│       │       └── AuthController.java      ← 登录接口（第四阶段）
+│       │       ├── RollbackController.java
+│       │       ├── EditCompController.java
+│       │       ├── ForceUnlockController.java
+│       │       ├── RouteBatchController.java
+│       │       └── AuthController.java
 │       └── resources/
-│           ├── application.yml              ← H2 内存库配置（开发用）
-│           ├── schema.sql                   ← BCODE, BUSER, BCALND, DCODE, DUSER, DCALND + SM 配置表
-│           ├── data.sql                     ← 初始数据 + SM 配置数据（含 BCALND 零代码配置）
+│           ├── application.yml              ← H2 文件模式配置
+│           ├── schema.sql                   ← 88 张 B/D 表 + SM 配置表
+│           ├── data.sql                     ← 初始数据 + 全部 SM 配置
 │           └── mapper/
 │               └── BCodeMapper.xml
 │
@@ -273,14 +311,28 @@ MySM/
 │   ├── index.html
 │   └── src/
 │       ├── main.js
-│       ├── App.vue
+│       ├── App.vue                          ← 菜单导航 + 布局
 │       └── components/
-│           ├── BCodeManager.vue             ← 第一阶段手写页面
-│           ├── DynamicTableManager.vue      ← 第二/三/五阶段动态页面
-│           └── LoginView.vue                ← 第四阶段登录页面
+│           ├── DynamicTableManager.vue      ← 主视图（三栏布局）
+│           ├── RecordList.vue               ← 左面板（树形分组列表）
+│           ├── RecordDetail.vue             ← 右面板（详情/编辑）
+│           ├── ContextMenu.vue              ← 右键菜单
+│           ├── SearchDialog.vue             ← 高级搜索对话框
+│           ├── RefPicker.vue                ← 参照选择器
+│           ├── RouteCopyDialog.vue          ← Route 复制对话框
+│           └── LoginView.vue                ← 登录页面
 │
-├── Wafer_SMClient/            ← 旧系统 MFC 客户端源码
-├── Wafer_SMServer/            ← 旧系统 C 服务端源码
+├── tools/                     ← 迁移工具脚本 (Python)
+│   ├── parse_ddl.py           ← DB2 DDL → H2 建表语句
+│   ├── parse_checks.py        ← wdbtbl.h → 校验规则
+│   ├── merge_all.py           ← 合并 DDL + TABLEINFOEX + 校验
+│   └── install_tables.py      ← 安装特定表
+│
+├── docs/                      ← 文档
+│   └── CONFIG_GUIDE.md        ← 运维开发配置手册
+│
+├── Wafer_SMClient/            ← 旧系统 MFC 客户端源码（参考用）
+├── Wafer_SMServer/            ← 旧系统 C 服务端源码（参考用）
 └── WV-MMDBD_20241223_LS2.ddl  ← DB2 完整 DDL 导出
 ```
 
@@ -360,6 +412,22 @@ npm run dev
 - [x] 前端 SELECT 字段自动调用接口加载选项（CODE_CAT、USERG_ID 等）
 - [x] 新增/编辑表单中 SELECT 类型字段渲染为带选项的下拉框
 
+### 第五阶段扩展功能验证
+
+- [x] 88 张表通过 DDL + 配置数据批量上线，前后端零代码
+- [x] SM_CHECK_DEF 校验引擎：SAVE/RELEASE/DELETE/EDITCOMP 校验自动执行
+- [x] UNDO 撤销栈：新增/删除/编辑三类操作可逆
+- [x] Rollback：D 表数据覆盖 B 表，恢复 Release 版本
+- [x] ForceUnlock：管理员强制解锁
+- [x] EditComp：COMP_FLG 状态流转 N→Y
+- [x] 5 层操作历史：LAST_DATE/ACT/USER 1~5 shift-register 自动滚动
+- [x] Route 批量操作：Copy/VerUp/Release 含关联表联动
+- [x] 左侧树形分组面板：TREE_LEVEL 配置驱动，点击节点筛选中间表
+- [x] 下钻导航：SM_DRILL_DEF 配置，表间跳转
+- [x] Jump Button：表头/单元格跳转按钮
+- [x] 右键菜单：6 种上下文操作（编辑、删除、复制、锁定、解锁、Release）
+- [x] 登录用户追踪：操作历史使用实际登录用户而非 SYSTEM
+
 ---
 
 ## 八、待澄清问题
@@ -369,8 +437,9 @@ npm run dev
 | 高 | DB2 完整 DDL | 已提供 ✅ |
 | 高 | MQ 报文体序列化格式 | 用户确认不需要 ❌ |
 | 高 | 登录权限模型 | 已确认在 BUSER/BUSERG ✅ |
-| 中 | 每张表的 `DBRECCHECKTBL` 验证规则 | 待补充 |
-| 中 | BuildTime ↔ RunTime 同步详细逻辑 | 第三阶段已验证 ✅ |
+| 高 | 每张表的 `DBRECCHECKTBL` 验证规则 | 已通过 SM_CHECK_DEF 实现 ✅ |
+| 高 | BuildTime ↔ RunTime 同步详细逻辑 | Release + Rollback 已实现 ✅ |
+| 中 | DB2 环境连接信息和权限 | 待提供 |
 | 低 | 数据量和并发用户数 | 待补充 |
 | 低 | 是否有批量导入/导出、报表功能 | 待补充 |
 
@@ -378,7 +447,7 @@ npm run dev
 
 ## 九、下一步行动
 
-1. **DBRECCHECKTBL 验证规则**：提供 `wdbrec.sqc` 中各表的检查数组，实现后端校验逻辑
-2. **SELECT 下拉框数据源**：DynamicTableManager 支持从 SYSDATA / BCODE 等参照表加载选项
-3. **BPROD 验证**：选一张字段多、含 Dummy Field 的表（如 BPROD）验证复杂场景
-4. **DB2 迁移**：将 H2 schema 迁移到真实 DB2 环境验证语法兼容性
+1. **DB2 对接**：将 H2 schema/data 迁移到真实 DB2 环境，验证 SQL 语法兼容性（重点：双引号列名、TIMESTAMP 默认值、UPSERT 语法）
+2. **复杂表回归测试**：选 BPROD（字段多、含 Dummy Field）做完整端到端验证
+3. **生产加固**：统一异常处理、操作日志、并发锁冲突检测、Session 超时自动清理
+4. **灰度切流方案**：设计 Nginx 路由规则，支持按用户/按表逐步从 MFC 切到 Web
