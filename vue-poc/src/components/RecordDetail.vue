@@ -200,13 +200,14 @@ const onRefSelect = (val) => {
 
 <style scoped>
 .record-detail { padding: 0; font-size: 12px; }
+.record-detail :deep(.el-tabs__header) { padding-left: 12px; }
 .panel-title { font-weight: 700; padding: 0 12px; height: 28px; line-height: 28px; border-bottom: 2px solid var(--c-primary, #2B5CE6); color: var(--c-text, #1A2233); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--c-border-light, #E2E6EC); }
 .tab-toolbar { padding: 4px 0 8px; text-align: right; }
-.kv-list { padding: 4px 8px; }
+.kv-list { padding: 6px 12px; }
 .kv-row {
   display: flex; align-items: center; padding: 2px 0; gap: 6px; border-bottom: 1px solid var(--c-border-light, #E2E6EC);
 }
-.kv-key { width: 72px; color: var(--c-text-secondary, #5C6B7A); flex-shrink: 0; text-align: right; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.kv-key { width: 72px; color: var(--c-text-secondary, #5C6B7A); flex-shrink: 0; text-align: left; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .kv-input-wrap { flex: 1; min-width: 0; }
 .kv-input-wrap :deep(.el-input__inner) { padding: 2px 6px; font-size: 12px; border-radius: 1px; }
 .kv-input-wrap :deep(.el-input__wrapper) { box-shadow: none; border-radius: 1px; }

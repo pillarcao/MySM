@@ -15,8 +15,8 @@
       >
         <template #default="{ node, data }">
           <span class="tree-node" :class="{ 'is-record': !!data.record }">
-            <el-icon v-if="!data.record" class="group-icon"><ArrowRight /></el-icon>
-            <el-icon v-else class="leaf-icon"><CircleCheck /></el-icon>
+            <span v-if="!data.record" class="group-icon">&#9679;</span>
+            <span v-else class="leaf-icon">&#9670;</span>
             <span class="node-label">{{ data.label }}</span>
             <span v-if="!data.record && data.children" class="node-count">({{ data.children.length }})</span>
           </span>
@@ -30,7 +30,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
-import { ArrowRight, CircleCheck } from '@element-plus/icons-vue'
 
 const props = defineProps({
   tableId: { type: String, default: '' },
@@ -104,13 +103,14 @@ watch(() => props.records, () => {
 .panel-title { font-weight: 700; padding: 0 12px; height: 28px; line-height: 28px; border-bottom: 2px solid var(--c-primary, #2B5CE6); color: var(--c-text, #1A2233); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--c-border-light, #E2E6EC); }
 .tree-body { padding: 2px 0; }
 .tree-node { display: flex; align-items: center; gap: 4px; font-size: 12px; }
-.group-icon { color: var(--c-primary, #2B5CE6); font-size: 13px; flex-shrink: 0; }
-.leaf-icon { color: var(--c-text-secondary, #5C6B7A); font-size: 13px; flex-shrink: 0; }
+.group-icon { color: var(--c-primary, #2B5CE6); font-size: 10px; flex-shrink: 0; }
+.leaf-icon { color: var(--c-text-secondary, #5C6B7A); font-size: 8px; flex-shrink: 0; }
 .node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--c-text, #1A2233); }
 .node-count { color: var(--c-text-secondary, #5C6B7A); font-size: 10px; flex-shrink: 0; }
 .tree-node.is-record { cursor: pointer; }
 .empty-hint { color: var(--c-text-secondary, #5C6B7A); text-align: center; padding: 30px 0; font-size: 12px; }
 :deep(.el-tree) { background: transparent; border-radius: 0; }
+:deep(.el-tree-node__expand-icon) { font-size: 12px; color: #999; }
 :deep(.el-tree-node__content) { height: 26px; border-radius: 0; }
 :deep(.el-tree-node__content:hover) { background: var(--c-row-selected, #E8EDF5); }
 :deep(.el-tree-node.is-current > .el-tree-node__content) { background: var(--c-row-selected, #E8EDF5); color: var(--c-primary, #2B5CE6); font-weight: 600; border-left: 3px solid var(--c-primary, #2B5CE6); }

@@ -130,7 +130,14 @@ const handleLogout = async () => {
 }
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }
 const onRecordsChange = (keys) => { recordKeys.value = keys || [] }
-const onRecordSelect = (rec) => { selectedLeftKey.value = rec }
+const onRecordSelect = (rec) => {
+  selectedLeftKey.value = rec
+  selectedRecord.value = rec
+  // Update currentFields if available
+  if (rec && currentFields.value.length === 0) {
+    axios.get('/api/meta/' + activeTabId.value).then(r => { currentFields.value = r.data.fields || [] }).catch(() => {})
+  }
+}
 const onGroupFilter = ({ field, value, record }) => {
   if (record) {
     // Leaf click: filter by all key-value pairs from the record (exclude internal fields)
