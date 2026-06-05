@@ -22,6 +22,7 @@
     </div>
     <div class="evtlog-table">
       <el-table :data="rows" size="small" border stripe height="100%" style="width: 100%"
+                :show-overflow-tooltip="true"
                 :default-sort="{ prop: 'EVT_TIME', order: 'descending' }">
         <el-table-column prop="EVT_TIME" label="Time" width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.EVT_TIME) }}</template>
@@ -118,5 +119,6 @@ onMounted(() => {
 .evtlog-table :deep(.el-table) { border: 1px solid var(--c-border, #D0D5DC); border-radius: 0 !important; }
 .evtlog-table :deep(.el-table__header th) { background: #E8ECF2 !important; border-bottom: 2px solid var(--c-primary, #2B5CE6) !important; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
 .evtlog-table :deep(.el-table__body td) { border-color: var(--c-border-light, #E2E6EC) !important; }
+.evtlog-table :deep(.el-table .cell) { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; padding: 0 4px !important; }
 .evtlog-table :deep(.el-table__body tr:hover > td) { background: var(--c-row-selected, #E8EDF5) !important; }
 </style>
