@@ -20,6 +20,7 @@ public class RouteBatchService {
     private final SmTableDefMapper tableDefMapper;
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
+    private final HistoryService historyService;
 
     /**
      * Route batch operation tables (from original MFC system RouteCopy/RouteVerUp/RouteRelease).
@@ -192,6 +193,8 @@ public class RouteBatchService {
             addCtrlField(columns, values, placeholders, "LOCK_USER", "");
             addCtrlField(columns, values, placeholders, "LOCK_TIME", null);
             addCtrlField(columns, values, placeholders, "COMMENT", srcRow.getOrDefault("COMMENT", ""));
+            // History: slot 1 = Create (copy), slots 2-5 = empty
+            historyService.addInitHistory(columns, values, placeholders, "Create", "SYSTEM");
 
             String sql = "INSERT INTO " + tableName + " (" + String.join(", ", columns)
                     + ") VALUES (" + String.join(", ", placeholders) + ")";

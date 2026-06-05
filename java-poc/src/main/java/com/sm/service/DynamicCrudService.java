@@ -21,6 +21,7 @@ public class DynamicCrudService {
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
+    private final HistoryService historyService;
 
     public List<Map<String, Object>> list(String tableId, String status) {
         return search(tableId, status, new HashMap<>());
@@ -193,9 +194,7 @@ public class DynamicCrudService {
             }
         }
         if (tableName.startsWith("B")) {
-            setParts.add("\"LAST_DATE1\" = CURRENT_TIMESTAMP");
-            setParts.add("\"LAST_ACT1\" = 'UPDATE'");
-            setParts.add("\"LAST_USER1\" = 'SYSTEM'");
+            setParts.add(historyService.shiftHistorySQL("Save", "SYSTEM"));
         }
 
         String sql = "UPDATE " + tableName + " SET " + String.join(", ", setParts) + " WHERE " + where;
@@ -287,10 +286,8 @@ public class DynamicCrudService {
     private void addDefaultControlColumns(List<String> columns, List<Object> values, List<String> placeholders) {
         String[][] defaults = {
                 {"COMP_FLG", "N"},
-                {"CRE_DATE", "__TS__"},
+                {"CRE_DATE", "T"},
                 {"CRE_USER", "SYSTEM"},
-                {"LAST_ACT1", ""},
-                {"LAST_USER1", ""},
                 {"OWNER", "SYSTEM"},
                 {"OWNERG", ""},
                 {"PERMISSION", "PUBLIC    "},
@@ -301,13 +298,17 @@ public class DynamicCrudService {
             String quoted = "\"" + def[0] + "\"";
             if (!columns.contains(quoted)) {
                 columns.add(quoted);
-                if ("__TS__".equals(def[1])) {
+                if ("T".equals(def[1])) {
                     values.add(new Timestamp(System.currentTimeMillis()));
                 } else {
                     values.add(def[1]);
                 }
                 placeholders.add("?");
             }
+        }
+        // History: slot 1 = Create, slots 2-5 = empty
+        if (!columns.contains("\"LAST_DATE1\"")) {
+            historyService.addInitHistory(columns, values, placeholders, "Create", "SYSTEM");
         }
     }
 }

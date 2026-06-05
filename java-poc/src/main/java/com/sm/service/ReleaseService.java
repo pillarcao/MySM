@@ -23,6 +23,7 @@ public class ReleaseService {
     private final SmCheckDefMapper checkDefMapper;
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
+    private final HistoryService historyService;
 
     private static final Set<String> CONTROL_FIELDS;
     static {
@@ -199,7 +200,8 @@ public class ReleaseService {
             values.add(dbKeys.get(kf.getFieldName()));
         }
 
-        String sql = "UPDATE " + bTableName + " SET \"REL_FLG\" = 'Y', \"COMP_FLG\" = 'Y', \"LAST_DATE1\" = CURRENT_TIMESTAMP, \"LAST_ACT1\" = 'RELEASE', \"LAST_USER1\" = 'SYSTEM' WHERE " + where;
+        String sql = "UPDATE " + bTableName + " SET \"REL_FLG\" = 'Y', \"COMP_FLG\" = 'Y', "
+                + historyService.shiftHistorySQL("Release", "SYSTEM") + " WHERE " + where;
         jdbcTemplate.update(sql, values.toArray());
     }
 

@@ -19,6 +19,7 @@ public class EditCompService {
     private final SmFieldDefMapper fieldDefMapper;
     private final JdbcTemplate jdbcTemplate;
     private final ValidationService validationService;
+    private final HistoryService historyService;
 
     @Transactional
     public void editComp(String tableId, Map<String, Object> keys) {
@@ -40,8 +41,9 @@ public class EditCompService {
             values.add(keys.get(kf.getFieldName()));
         }
 
-        // 4. 更新 COMP_FLG='Y'，并记录 LAST
-        String sql = "UPDATE " + tableName + " SET \"COMP_FLG\" = 'Y', \"LAST_DATE1\" = CURRENT_TIMESTAMP, \"LAST_ACT1\" = 'EDITCOMP', \"LAST_USER1\" = 'SYSTEM' WHERE " + where;
+        // 4. Update COMP_FLG='Y' with history shift (slot1=EditComp, old→slots 2-5)
+        String sql = "UPDATE " + tableName + " SET \"COMP_FLG\" = 'Y', "
+                + historyService.shiftHistorySQL("EditComp", "SYSTEM") + " WHERE " + where;
         jdbcTemplate.update(sql, values.toArray());
     }
 
