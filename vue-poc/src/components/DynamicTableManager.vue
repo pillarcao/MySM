@@ -745,6 +745,18 @@ const load = async () => {
 onMounted(() => { initialLoadDone = true; load() })
 watch(() => props.tableId, () => { if (initialLoadDone) load() })
 
+// Group filter from left panel tree → re-query with filter
+watch(() => props.drillQuery, (q) => {
+  if (!initialLoadDone) return
+  if (q && Object.keys(q).length > 0) {
+    queryStatus.value = 'ALL'
+    Object.keys(queryForm.value).forEach(k => { queryForm.value[k] = '' })
+    Object.keys(q).forEach(k => { queryForm.value[k] = q[k] })
+    doSearch()
+    emit('searched')
+  }
+})
+
 // Left panel selection → scroll center table
 watch(selectedLeftKey, (key) => {
   if (!key || !tableRef.value) return
