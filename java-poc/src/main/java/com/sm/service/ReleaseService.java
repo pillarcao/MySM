@@ -25,6 +25,7 @@ public class ReleaseService {
     private final ValidationService validationService;
     private final HistoryService historyService;
     private final com.sm.util.UserContext userContext;
+    private final EventLogService eventLogService;
 
     private static final Set<String> CONTROL_FIELDS;
     static {
@@ -130,6 +131,10 @@ public class ReleaseService {
         // 7. 更新 B 表：先删除旧的 R 记录（如果存在），再将当前 E 记录更新为 R
         deleteOldBReleased(bTableName, fields, dbKeys);
         updateBToReleased(bTableName, fields, dbKeys);
+
+        // 8. Event log
+        eventLogService.log("Release", userContext.getCurrentUser(), bTableName,
+                buildKeyString(fields, dbKeys), "");
     }
 
     private int updateDTable(String dTableName, Map<String, Object> dRecord, List<String> dKeyColumns) {
@@ -224,6 +229,18 @@ public class ReleaseService {
             }
         }
         return values;
+    }
+
+    private String buildKeyString(List<SmFieldDef> fields, Map<String, Object> keys) {
+        StringBuilder sb = new StringBuilder();
+        for (SmFieldDef f : fields) {
+            if ("Y".equals(f.getIsKey()) && !"REL_FLG".equals(f.getFieldName())) {
+                if (sb.length() > 0) sb.append("|");
+                Object val = keys.get(f.getFieldName());
+                sb.append(val != null ? val.toString().trim() : "");
+            }
+        }
+        return sb.toString();
     }
 
     private String getTableName(String tableId) {

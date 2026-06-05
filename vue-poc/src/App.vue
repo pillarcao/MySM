@@ -12,6 +12,7 @@
               <el-menu-item v-for="t in grp.children" :key="t.tableId" :index="t.tableId">{{ t.label }}</el-menu-item>
             </el-sub-menu>
           </el-sub-menu>
+          <el-menu-item index="__EVTLOG__">Logging</el-menu-item>
         </el-menu>
         <el-button size="small" class="logout-btn" @click="handleLogout">退出</el-button>
       </el-header>
@@ -36,21 +37,28 @@
       </div>
 
       <div class="body-area">
-        <div class="left-panel">
-          <RecordList :table-id="activeTabId" :records="recordKeys" @select="onRecordSelect" @group-filter="onGroupFilter" />
-        </div>
-        <div class="center-panel">
-          <div class="tab-strip" v-if="openTabs.length > 0">
-            <div v-for="tab in openTabs" :key="tab.tableId" class="tab-item" :class="{ active: activeTabId === tab.tableId }" @click="switchTab(tab.tableId)">
-              <span>{{ tab.title }}</span><span class="tab-close" @click.stop="closeTab(tab.tableId)">×</span>
-            </div>
+        <template v-if="viewMode === 'evtlog'">
+          <div class="center-panel" style="width: 100%;">
+            <EventLogView />
           </div>
-          <DynamicTableManager v-if="activeTabId" :key="activeTabId" :table-id="activeTabId" :drill-query="drillQueries[activeTabId] || {}" :show-search="!tabInitialized[activeTabId]" @row-select="onRowSelect" @records-change="onRecordsChange" @edit-state="onEditState" @searched="onTabSearched(activeTabId)" @cell-jump="onDrillDown" />
-          <div v-else class="empty-center">Select a table from the File menu</div>
-        </div>
-        <div class="right-panel">
-          <RecordDetail :table-id="activeTabId" :record="selectedRecord" :fields="currentFields" :is-new="isNewRecord" @drill-down="onDrillDown" />
-        </div>
+        </template>
+        <template v-else>
+          <div class="left-panel">
+            <RecordList :table-id="activeTabId" :records="recordKeys" @select="onRecordSelect" @group-filter="onGroupFilter" />
+          </div>
+          <div class="center-panel">
+            <div class="tab-strip" v-if="openTabs.length > 0">
+              <div v-for="tab in openTabs" :key="tab.tableId" class="tab-item" :class="{ active: activeTabId === tab.tableId }" @click="switchTab(tab.tableId)">
+                <span>{{ tab.title }}</span><span class="tab-close" @click.stop="closeTab(tab.tableId)">×</span>
+              </div>
+            </div>
+            <DynamicTableManager v-if="activeTabId" :key="activeTabId" :table-id="activeTabId" :drill-query="drillQueries[activeTabId] || {}" :show-search="!tabInitialized[activeTabId]" @row-select="onRowSelect" @records-change="onRecordsChange" @edit-state="onEditState" @searched="onTabSearched(activeTabId)" @cell-jump="onDrillDown" />
+            <div v-else class="empty-center">Select a table from the File menu</div>
+          </div>
+          <div class="right-panel">
+            <RecordDetail :table-id="activeTabId" :record="selectedRecord" :fields="currentFields" :is-new="isNewRecord" @drill-down="onDrillDown" />
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -65,8 +73,10 @@ import LoginView from './components/LoginView.vue'
 import RecordDetail from './components/RecordDetail.vue'
 import RecordList from './components/RecordList.vue'
 import DynamicTableManager from './components/DynamicTableManager.vue'
+import EventLogView from './components/EventLogView.vue'
 
 const isLoggedIn = ref(false)
+const viewMode = ref('table')
 const selectedRecord = ref(null)
 const currentFields = ref([])
 const refreshKey = ref(0)
@@ -114,7 +124,10 @@ const fetchTables = async () => {
   }
 }
 const onLoginSuccess = () => { isLoggedIn.value = true; fetchTables().then(() => { if (tables.value[0]) { const t = tables.value[0]; openTable(t.tableId, t.usTitle || t.jpTitle || t.tableId) } }) }
-const handleLogout = () => { localStorage.removeItem('sm_token'); delete axios.defaults.headers.common['Authorization']; isLoggedIn.value = false }
+const handleLogout = async () => {
+  try { await axios.post('/api/auth/logout') } catch(e) { /* ignore */ }
+  localStorage.removeItem('sm_token'); delete axios.defaults.headers.common['Authorization']; isLoggedIn.value = false; viewMode.value = 'table'
+}
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }
 const onRecordsChange = (keys) => { recordKeys.value = keys || [] }
 const onRecordSelect = (rec) => { selectedLeftKey.value = rec }
@@ -155,7 +168,11 @@ const closeTab = (id) => {
   delete drillQueries.value[id]
   if (activeTabId.value === id) activeTabId.value = openTabs.value.length > 0 ? openTabs.value[openTabs.value.length-1].tableId : ''
 }
-const onMenuSelect = (tableId) => { if (tableId && tables.value.find(t => t.tableId === tableId)) { const t = tables.value.find(x => x.tableId === tableId); openTable(tableId, t.usTitle || t.jpTitle || tableId) } }
+const onMenuSelect = (index) => {
+  if (index === '__EVTLOG__') { viewMode.value = 'evtlog'; return }
+  viewMode.value = 'table'
+  if (index && tables.value.find(t => t.tableId === index)) { const t = tables.value.find(x => x.tableId === index); openTable(index, t.usTitle || t.jpTitle || index) }
+}
 
 onMounted(() => {
   const token = localStorage.getItem('sm_token')

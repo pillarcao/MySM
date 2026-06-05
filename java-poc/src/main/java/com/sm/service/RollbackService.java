@@ -21,6 +21,7 @@ public class RollbackService {
     private final JdbcTemplate jdbcTemplate;
     private final HistoryService historyService;
     private final com.sm.util.UserContext userContext;
+    private final EventLogService eventLogService;
 
     @Transactional
     public void rollback(String tableId, Map<String, Object> keys) {
@@ -110,6 +111,15 @@ public class RollbackService {
         String sql = "INSERT INTO " + bTableName + " (" + String.join(", ", columns)
                 + ") VALUES (" + String.join(", ", placeholders) + ")";
         jdbcTemplate.update(sql, values.toArray());
+
+        // Event log
+        StringBuilder keyStr = new StringBuilder();
+        for (SmFieldDef kf : keyFields) {
+            if (keyStr.length() > 0) keyStr.append("|");
+            Object val = keys.get(kf.getFieldName());
+            keyStr.append(val != null ? val.toString().trim() : "");
+        }
+        eventLogService.log("Rollback", userContext.getCurrentUser(), bTableName, keyStr.toString(), "");
     }
 
     private void addField(List<String> columns, List<Object> values, List<String> placeholders,

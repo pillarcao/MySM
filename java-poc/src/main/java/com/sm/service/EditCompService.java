@@ -21,6 +21,7 @@ public class EditCompService {
     private final ValidationService validationService;
     private final HistoryService historyService;
     private final com.sm.util.UserContext userContext;
+    private final EventLogService eventLogService;
 
     @Transactional
     public void editComp(String tableId, Map<String, Object> keys) {
@@ -46,6 +47,15 @@ public class EditCompService {
         String sql = "UPDATE " + tableName + " SET \"COMP_FLG\" = 'Y', "
                 + historyService.shiftHistorySQL("EditComp", userContext.getCurrentUser()) + " WHERE " + where;
         jdbcTemplate.update(sql, values.toArray());
+
+        // Event log
+        StringBuilder keyStr = new StringBuilder();
+        for (SmFieldDef kf : keyFields) {
+            if (keyStr.length() > 0) keyStr.append("|");
+            Object val = keys.get(kf.getFieldName());
+            keyStr.append(val != null ? val.toString().trim() : "");
+        }
+        eventLogService.log("EditComp", userContext.getCurrentUser(), tableName, keyStr.toString(), "");
     }
 
     private String getTableName(String tableId) {

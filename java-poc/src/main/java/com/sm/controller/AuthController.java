@@ -1,6 +1,8 @@
 package com.sm.controller;
 
+import com.sm.service.EventLogService;
 import com.sm.util.JwtUtil;
+import com.sm.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +21,8 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final EventLogService eventLogService;
+    private final UserContext userContext;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> req) {
@@ -36,9 +40,17 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(userId);
+        eventLogService.log("Login", userId, "", "", "");
+
         Map<String, Object> resp = new HashMap<>();
         resp.put("token", token);
         resp.put("userId", userId);
         return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/logout")
+    public String logout() {
+        eventLogService.log("Logoff", userContext.getCurrentUser(), "", "", "");
+        return "OK";
     }
 }

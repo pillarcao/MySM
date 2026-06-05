@@ -23,6 +23,7 @@ public class DynamicCrudService {
     private final ValidationService validationService;
     private final HistoryService historyService;
     private final com.sm.util.UserContext userContext;
+    private final EventLogService eventLogService;
 
     public List<Map<String, Object>> list(String tableId, String status) {
         return search(tableId, status, new HashMap<>());
@@ -101,8 +102,12 @@ public class DynamicCrudService {
 
         if (count != null && count > 0) {
             update(tableName, fields, dbData, where, keyValues);
+            eventLogService.log("Save", userContext.getCurrentUser(), tableName,
+                    buildKeyString(keyFields, dbData), "");
         } else {
             insert(tableName, fields, dbData);
+            eventLogService.log("Create", userContext.getCurrentUser(), tableName,
+                    buildKeyString(keyFields, dbData), "");
         }
     }
 
@@ -121,6 +126,8 @@ public class DynamicCrudService {
         // Delete: validateForDelete already checked STAT_Y, no need to filter REL_FLG
         String sql = "DELETE FROM " + tableName + " WHERE " + where;
         jdbcTemplate.update(sql, keyValues.toArray());
+        eventLogService.log("Delete", userContext.getCurrentUser(), tableName,
+                buildKeyString(keyFields, dbData), "");
     }
 
     @Transactional
@@ -150,6 +157,8 @@ public class DynamicCrudService {
                     + " AND \"REL_FLG\" = 'Y'";
             jdbcTemplate.update(sqlY, values.toArray());
         }
+        eventLogService.log("EditStart", userContext.getCurrentUser(), tableName,
+                buildKeyString(keys), "");
     }
 
     @Transactional
@@ -179,6 +188,8 @@ public class DynamicCrudService {
                     + " AND \"REL_FLG\" = 'Y'";
             jdbcTemplate.update(sqlY, values.toArray());
         }
+        eventLogService.log("EditCancel", userContext.getCurrentUser(), tableName,
+                buildKeyString(keys), "");
     }
 
     private void update(String tableName, List<SmFieldDef> fields,
@@ -263,6 +274,25 @@ public class DynamicCrudService {
             } else {
                 sb.append(Character.toUpperCase(c));
             }
+        }
+        return sb.toString();
+    }
+
+    private String buildKeyString(List<SmFieldDef> keyFields, Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder();
+        for (SmFieldDef kf : keyFields) {
+            if (sb.length() > 0) sb.append("|");
+            Object val = data.get(kf.getFieldName());
+            sb.append(val != null ? val.toString().trim() : "");
+        }
+        return sb.toString();
+    }
+
+    private String buildKeyString(Map<String, Object> keys) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Object> entry : keys.entrySet()) {
+            if (sb.length() > 0) sb.append("|");
+            sb.append(entry.getValue() != null ? entry.getValue().toString().trim() : "");
         }
         return sb.toString();
     }
