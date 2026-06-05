@@ -161,8 +161,25 @@ const isKeyField = (f) => f.isKey === 'Y'
 
 const formatVal = (val) => {
   if (val === null || val === undefined) return ''
-  if (typeof val === 'string') return val.trim()
+  if (typeof val === 'string') {
+    // Detect ISO timestamp strings like "2026-06-05T08:32:40.634+00:00"
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(val)) {
+      return formatTimestamp(val)
+    }
+    return val.trim()
+  }
+  if (typeof val === 'number' && val > 1000000000000) {
+    // Epoch millis
+    return formatTimestamp(val)
+  }
   return val
+}
+
+const formatTimestamp = (val) => {
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return String(val)
+  const pad = (n, len = 2) => String(n).padStart(len, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(),3)}000`
 }
 
 const openRefPicker = (field) => {

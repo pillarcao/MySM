@@ -198,7 +198,18 @@ const ctxDisabled = computed(() => ({
 }))
 
 const isKeyField = (f) => f.isKey==='Y'
-const formatCell = (v) => v ? String(v).trim() : ''
+const formatCell = (v) => {
+  if (!v) return ''
+  const s = String(v)
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+    const d = new Date(s)
+    if (!isNaN(d.getTime())) {
+      const pad = (n, len = 2) => String(n).padStart(len, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(),3)}000`
+    }
+  }
+  return s.trim()
+}
 
 const tableRowClassName = ({ row }) => {
   const r = (row.REL_FLG||'').trim(); const c = (row.COMP_FLG||'').trim()

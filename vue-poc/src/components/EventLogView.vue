@@ -86,8 +86,10 @@ const loadOptions = async () => {
 
 const formatTime = (val) => {
   if (!val) return ''
-  if (typeof val === 'string') return val.substring(0, 19)
-  return new Date(val).toISOString().substring(0, 19).replace('T', ' ')
+  const d = typeof val === 'string' ? new Date(val) : new Date(val)
+  if (isNaN(d.getTime())) return String(val)
+  const pad = (n, len = 2) => String(n).padStart(len, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(),3)}000`
 }
 
 const tagType = (code) => {
