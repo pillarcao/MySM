@@ -816,8 +816,10 @@ watch(selectedLeftKey, (key) => {
 :deep(.el-table__body tr.current-row > td) { background-color: #1A2233 !important; color: #fff !important; }
 :deep(.el-table__body tr.current-row > td .cell-text) { color: #fff !important; }
 :deep(.el-table__body tr.current-row > td .el-tag) { color: #fff !important; }
-.no-hover-table :deep(tr:hover > td.el-table__cell) { background-color: transparent !important; }
-.no-hover-table :deep(.el-table__body tr:hover > td) { background-color: transparent !important; }
-.no-hover-table :deep(.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell) { background-color: transparent !important; }
+.no-hover-table :deep(tr:hover > td.el-table__cell) { background-color: #1A2233 !important; color: #fff !important; }
+.no-hover-table :deep(.el-table__body tr:hover > td) { background-color: #1A2233 !important; color: #fff !important; }
+.no-hover-table :deep(.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell) { background-color: #1A2233 !important; color: #fff !important; }
+.no-hover-table :deep(.el-table__body tr:hover > td .cell-text) { color: #fff !important; }
+.no-hover-table :deep(.el-table__body tr:hover > td .el-tag) { color: #fff !important; }
 :deep(.el-input__inner) { padding: 0 4px; font-size: 12px; border-radius: 1px; }
 </style>
