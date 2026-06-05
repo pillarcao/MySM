@@ -118,8 +118,29 @@ const handleLogout = () => { localStorage.removeItem('sm_token'); delete axios.d
 const onRowSelect = (row, fields, tableId) => { selectedRecord.value = row; currentFields.value = fields || [] }
 const onRecordsChange = (keys) => { recordKeys.value = keys || [] }
 const onRecordSelect = (rec) => { selectedLeftKey.value = rec }
-const onGroupFilter = ({ field, value }) => {
-  drillQueries.value[activeTabId.value] = { [field]: value }
+const onGroupFilter = ({ field, value, record }) => {
+  if (record) {
+    // Leaf click: filter by all key-value pairs from the record (exclude internal fields)
+    const query = {}
+    const skipFields = ['REL_FLG','COMP_FLG','CRE_DATE','CRE_USER','OWNER','OWNERG','PERMISSION','LOCK_USER','LOCK_TIME','COMMENT']
+    for (const k of Object.keys(record)) {
+      if (k.startsWith('LAST_')) continue
+      if (skipFields.includes(k)) continue
+      const v = record[k]
+      if (v != null && String(v).trim()) {
+        // Only include fields that look like key/identifying fields
+        if (currentFields.value.length > 0) {
+          const fieldDef = currentFields.value.find(f => f.fieldName === k)
+          if (fieldDef && fieldDef.isKey === 'Y') {
+            query[k] = String(v).trim()
+          }
+        }
+      }
+    }
+    drillQueries.value[activeTabId.value] = Object.keys(query).length > 0 ? query : { [field]: value }
+  } else if (field) {
+    drillQueries.value[activeTabId.value] = { [field]: value }
+  }
 }
 const onEditState = (state) => { isNewRecord.value = state.isNewRow }
 const onDrillDown = ({ tableId, label, query }) => { openTable(tableId, label); drillQueries.value[tableId] = query }

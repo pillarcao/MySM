@@ -80,7 +80,9 @@ const fetchTree = async () => {
 
 const onNodeClick = (data) => {
   if (data.record) {
+    // Leaf click: filter center table by record key values
     emit('select', data.record)
+    emit('group-filter', { field: '', value: '', record: data.record })
   } else if (treeField.value) {
     // Group click: filter center table by group value
     emit('group-filter', { field: treeField.value, value: data.label })
