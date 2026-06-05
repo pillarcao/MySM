@@ -82,6 +82,12 @@ VALUES ('TBLID_BXXXX', 'XXXX_ID', 'ID', 'ID', 'STRING', 20, 'Y', 'Y', 'N', 'Y', 
 INSERT INTO SM_FIELD_DEF (...) VALUES ('TBLID_BXXXX', 'XXXX_NAME', '名称', 'Name', 'STRING', 40, 'N', 'N', 'N', 'Y', -1, 'N', 'N', 'N', 'STRING', 40, 'Y', 7, 'Y', 'Y', 'N', 'NONE', 'N', 'N', 0, NULL, NULL, 0);
 ```
 
+> **树形分组：** 设置 `TREE_LEVEL` 列（>=0）可将左侧面板记录按该字段分组显示。
+> ```sql
+> -- 例如：BCODE 表按 CODE_CAT 字段分组
+> UPDATE SM_FIELD_DEF SET TREE_LEVEL = 0 WHERE TABLE_ID = 'TBLID_BXXXX' AND FIELD_NAME = 'XXXX_CAT';
+> ```
+
 ### Step 3: 配置校验规则 (data.sql)
 
 ```sql
@@ -142,11 +148,14 @@ VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related Table', 1);
 | IS_KEY | 'Y'=主键 |
 | IS_DUMMY | 'Y'=虚拟字段(不存储) |
 | IS_SEARCH_ITEM | 'Y'=出现在查询条件栏 |
-| FIELD_TYPE | SELECT/NUMBER/STRING |
-| RETRIEVAL_TABLE | SYSDATA(下拉选项) / NONE |
+| IS_AUTO | 'Y'=自动生成字段(不显示) |
+| FIELD_TYPE | SELECT(下拉)/NUMBER(数字)/STRING(文本) |
+| RETRIEVAL_TABLE | SYSDATA(下拉选项) / NONE(无下拉) |
 | CALENDAR_BUTTON | 'Y'=日期选择器 |
-| REF_TABLE_ID | 参照表ID (外键) |
+| JUMP_BUTTON | 'Y'=表头跳转按钮 |
+| REF_TABLE_ID | 参照表ID (外键关联) |
 | REF_FIELD_NAME | 参照字段名 |
+| TREE_LEVEL | >=0 时左侧面板按此字段分组显示树形结构（-1=不分组） |
 
 ### 状态流转
 
