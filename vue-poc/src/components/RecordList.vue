@@ -15,8 +15,8 @@
       >
         <template #default="{ node, data }">
           <span class="tree-node" :class="{ 'is-record': !!data.record }">
-            <el-icon v-if="!data.record" class="folder-icon"><Folder /></el-icon>
-            <el-icon v-else class="leaf-icon"><Document /></el-icon>
+            <el-icon v-if="!data.record" class="group-icon"><Collection /></el-icon>
+            <el-icon v-else class="leaf-icon"><PriceTag /></el-icon>
             <span class="node-label">{{ data.label }}</span>
             <span v-if="!data.record && data.children" class="node-count">({{ data.children.length }})</span>
           </span>
@@ -30,7 +30,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
-import { Folder, Document } from '@element-plus/icons-vue'
+import { Collection, PriceTag } from '@element-plus/icons-vue'
 
 const props = defineProps({
   tableId: { type: String, default: '' },
@@ -96,7 +96,7 @@ watch(() => props.records, () => {
 .panel-title { font-weight: 600; padding: 0 12px; height: 30px; line-height: 30px; border-bottom: 1px solid #e8e8e8; color: #333; }
 .tree-body { padding: 4px 0; }
 .tree-node { display: flex; align-items: center; gap: 4px; font-size: 12px; }
-.folder-icon { color: #e6a23c; font-size: 14px; flex-shrink: 0; }
+.group-icon { color: #e6a23c; font-size: 14px; flex-shrink: 0; }
 .leaf-icon { color: #409eff; font-size: 14px; flex-shrink: 0; }
 .node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .node-count { color: #999; font-size: 11px; flex-shrink: 0; }
