@@ -102,10 +102,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.ctx-menu { position: fixed; z-index: 9999; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12); padding: 4px 0; min-width: 180px; font-size: 13px; }
-.ctx-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; cursor: pointer; color: #333; }
-.ctx-item:hover { background: #e6f7ff; color: #1890ff; }
-.ctx-item.disabled { color: #ccc; cursor: default; pointer-events: none; }
-.ctx-item .el-icon { font-size: 14px; }
-.ctx-divider { height: 1px; background: #f0f0f0; margin: 4px 0; }
+.ctx-menu { position: fixed; z-index: 9999; background: #fff; border: 1px solid var(--c-border, #D0D5DC); border-radius: 0; box-shadow: 2px 2px 8px rgba(13,27,42,.15); padding: 2px 0; min-width: 200px; font-size: 12px; }
+.ctx-item { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; color: var(--c-text, #1A2233); }
+.ctx-item:hover { background: var(--c-row-selected, #E8EDF5); color: var(--c-primary, #2B5CE6); }
+.ctx-item.disabled { color: #bbb; cursor: default; pointer-events: none; }
+.ctx-item .el-icon { font-size: 13px; }
+.ctx-divider { height: 1px; background: var(--c-border-light, #E2E6EC); margin: 2px 0; }
 </style>

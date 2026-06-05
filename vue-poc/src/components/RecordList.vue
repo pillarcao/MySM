@@ -101,17 +101,17 @@ watch(() => props.records, () => {
 
 <style scoped>
 .record-list { font-size: 12px; }
-.panel-title { font-weight: 600; padding: 0 12px; height: 30px; line-height: 30px; border-bottom: 1px solid #e8e8e8; color: #333; }
-.tree-body { padding: 4px 0; }
+.panel-title { font-weight: 700; padding: 0 12px; height: 28px; line-height: 28px; border-bottom: 2px solid var(--c-primary, #2B5CE6); color: var(--c-text, #1A2233); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--c-border-light, #E2E6EC); }
+.tree-body { padding: 2px 0; }
 .tree-node { display: flex; align-items: center; gap: 4px; font-size: 12px; }
-.group-icon { color: #e6a23c; font-size: 14px; flex-shrink: 0; }
-.leaf-icon { color: #409eff; font-size: 14px; flex-shrink: 0; }
-.node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.node-count { color: #999; font-size: 11px; flex-shrink: 0; }
+.group-icon { color: var(--c-primary, #2B5CE6); font-size: 13px; flex-shrink: 0; }
+.leaf-icon { color: var(--c-text-secondary, #5C6B7A); font-size: 13px; flex-shrink: 0; }
+.node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--c-text, #1A2233); }
+.node-count { color: var(--c-text-secondary, #5C6B7A); font-size: 10px; flex-shrink: 0; }
 .tree-node.is-record { cursor: pointer; }
-.empty-hint { color: #bbb; text-align: center; padding: 30px 0; font-size: 12px; }
-:deep(.el-tree) { background: transparent; }
-:deep(.el-tree-node__content) { height: 28px; }
-:deep(.el-tree-node__content:hover) { background: #e6f7ff; }
-:deep(.el-tree-node.is-current > .el-tree-node__content) { background: #bae7ff; color: #1890ff; font-weight: 500; }
+.empty-hint { color: var(--c-text-secondary, #5C6B7A); text-align: center; padding: 30px 0; font-size: 12px; }
+:deep(.el-tree) { background: transparent; border-radius: 0; }
+:deep(.el-tree-node__content) { height: 26px; border-radius: 0; }
+:deep(.el-tree-node__content:hover) { background: var(--c-row-selected, #E8EDF5); }
+:deep(.el-tree-node.is-current > .el-tree-node__content) { background: var(--c-row-selected, #E8EDF5); color: var(--c-primary, #2B5CE6); font-weight: 600; border-left: 3px solid var(--c-primary, #2B5CE6); }
 </style>

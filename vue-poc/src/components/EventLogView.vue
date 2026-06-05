@@ -109,8 +109,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.evtlog-view { display: flex; flex-direction: column; height: 100%; padding: 8px; }
-.evtlog-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.evtlog-count { font-size: 12px; color: #999; margin-left: 8px; }
+.evtlog-view { display: flex; flex-direction: column; height: 100%; padding: 6px; }
+.evtlog-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; padding: 6px 8px; background: var(--c-panel, #F7F8FA); border: 1px solid var(--c-border, #D0D5DC); }
+.evtlog-filter :deep(.el-input__wrapper) { border-radius: 1px; }
+.evtlog-filter :deep(.el-button) { border-radius: 1px; }
+.evtlog-count { font-size: 11px; color: var(--c-text-secondary, #5C6B7A); margin-left: 8px; }
 .evtlog-table { flex: 1; min-height: 0; overflow: hidden; }
+.evtlog-table :deep(.el-table) { border: 1px solid var(--c-border, #D0D5DC); border-radius: 0 !important; }
+.evtlog-table :deep(.el-table__header th) { background: #E8ECF2 !important; border-bottom: 2px solid var(--c-primary, #2B5CE6) !important; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.evtlog-table :deep(.el-table__body td) { border-color: var(--c-border-light, #E2E6EC) !important; }
+.evtlog-table :deep(.el-table__body tr:hover > td) { background: var(--c-row-selected, #E8EDF5) !important; }
 </style>

@@ -1,18 +1,12 @@
 <template>
-  <div>
+  <div class="dtm-root">
     <SearchDialog
       v-model="searchDialogVisible"
       :table-id="props.tableId"
       @search="onSearchDialog"
     />
 
-    <el-card v-loading="loading">
-      <template #header>
-        <div class="card-header">
-          <span>{{ tableTitle }} <el-tag v-if="editingRow" type="warning" size="small">{{ isNewRow ? '新增中' : '编辑中' }}</el-tag></span>
-          <el-button size="small" @click="searchDialogVisible = true">查找</el-button>
-        </div>
-      </template>
+    <div class="table-container" v-loading="loading">
 
       <!-- 动态表格：editMode 时单元格可编辑 -->
       <el-table
@@ -20,7 +14,11 @@
         :data="list"
         border
         size="small"
-        max-height="calc(100vh - 155px)"
+        height="100%"
+        :show-overflow-tooltip="true"
+        :row-style="() => ({})"
+        :cell-style="() => ({})"
+        class="no-hover-table"
         style="width: 100%; font-size: 12px;"
         :row-class-name="tableRowClassName"
         highlight-current-row
@@ -107,7 +105,7 @@
           </template>
           <template #default="{ row }">{{ formatCell(row.OWNER) }}</template>
         </el-table-column>
-        <el-table-column width="140" prop="CRE_DATE">
+        <el-table-column width="180" prop="CRE_DATE">
           <template #header>
             <div class="header-cell">
               <span>Created</span>
@@ -117,7 +115,7 @@
           <template #default="{ row }">{{ formatCell(row.CRE_DATE) }}</template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
     <ContextMenu
       :visible="ctxMenu.visible"
@@ -317,7 +315,7 @@ const ctxAction = (action) => {
     case 'clear': handleClear(); break
     case 'copy': handleCopy(); break
     case 'paste': handlePaste(); break
-    case 'find': handleFind(); break
+    case 'find': searchDialogVisible.value = true; break
     case 'rollback': handleRollback(); break
     case 'forceUnlock': handleForceUnlock(); break
     case 'routeCopy': handleRouteCopy(); break
@@ -725,7 +723,7 @@ const wireToolbar = () => {
   toolbar.undo = handleUndo
   toolbar.copy = handleCopy
   toolbar.paste = handlePaste
-  toolbar.find = handleFind
+  toolbar.find = () => { searchDialogVisible.value = true }
   toolbar.rollback = handleRollback
   toolbar.routeCopy = handleRouteCopy
   toolbar.routeVerUp = handleRouteVerUp
@@ -797,24 +795,29 @@ watch(selectedLeftKey, (key) => {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-:deep(.el-card) { border-radius: 8px; overflow: hidden; margin: 8px; }
-:deep(.el-card__header) { padding: 6px 12px !important; }
-:deep(.el-card__body) { padding: 6px 12px !important; }
+.dtm-root { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.table-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; }
 .input-with-btn { display: flex; align-items: center; gap: 8px; }
-.cell-text { font-size: 12px; color: #333; }
+.cell-text { font-size: 12px; color: var(--c-text, #1A2233); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:deep(.el-table .cell) { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; padding: 0 4px !important; }
 .cell-wrap { display: flex; align-items: center; gap: 2px; }
-.cell-ref-btn { padding: 0 4px; font-size: 10px; min-height: 20px; flex-shrink: 0; }
+.cell-ref-btn { padding: 0 4px; font-size: 10px; min-height: 18px; flex-shrink: 0; border-radius: 1px; }
 .header-cell { display: flex; flex-direction: column; align-items: stretch; }
-.header-cell span { display: flex; align-items: flex-start; justify-content: center; padding: 4px 4px 2px; font-weight: 600; color: #333; font-size: 12px; height: 22px; }
-.header-placeholder { height: 22px; border-top: 1px solid #d0d0d0; background: #e8e8e8; }
-.header-jump-btn { font-size: 11px; border-radius: 0; border: none; border-top: 1px solid #d0d0d0; background: #e8e8e8; padding: 3px 0; height: 22px; width: 100%; justify-content: center; }
-:deep(.el-table__header) th { background: linear-gradient(to bottom, #f0f0f0 50%, #e8e8e8 50%) !important; padding: 0 !important; }
+.header-cell span { display: flex; align-items: flex-start; justify-content: center; padding: 4px 4px 2px; font-weight: 700; color: var(--c-text, #1A2233); font-size: 11px; height: 22px; text-transform: uppercase; letter-spacing: 0.3px; }
+.header-placeholder { height: 20px; border-top: 1px solid var(--c-border, #D0D5DC); background: var(--c-border-light, #E2E6EC); }
+.header-jump-btn { font-size: 11px; border-radius: 0; border: none; border-top: 1px solid var(--c-border, #D0D5DC); background: var(--c-border-light, #E2E6EC); padding: 2px 0; height: 20px; width: 100%; justify-content: center; }
+:deep(.el-table) { border: 1px solid var(--c-border, #D0D5DC); border-radius: 0 !important; }
+:deep(.el-table__header) th { background: #E8ECF2 !important; padding: 0 !important; border-bottom: 2px solid var(--c-primary, #2B5CE6) !important; }
 :deep(.el-table__header) th .cell { padding: 0 !important; width: 100%; }
-:deep(.el-table__header) th { background-color: #f0f0f0 !important; color: #333; font-weight: 600; }
-:deep(.row-editing) { background-color: #f5f5f5 !important; }
-:deep(.row-editcomp) { background-color: #fffbe6 !important; }
-:deep(.row-released) { background-color: #f6ffed !important; }
-:deep(.el-table__body tr.current-row) { background-color: #e6f7ff !important; }
-:deep(.el-input__inner) { padding: 0 4px; font-size: 12px; }
+:deep(.el-table__body) td { border-color: var(--c-border-light, #E2E6EC) !important; padding: 2px 0 !important; }
+:deep(.row-editing) { background-color: var(--c-row-edit, #FFFFFF) !important; border-left: 3px solid #2B5CE6; }
+:deep(.row-editcomp) { background-color: var(--c-row-editcomp, #FFF8E1) !important; border-left: 3px solid #F59E0B; }
+:deep(.row-released) { background-color: var(--c-row-released, #E3F2E8) !important; border-left: 3px solid #10B981; }
+:deep(.el-table__body tr.current-row > td) { background-color: #1A2233 !important; color: #fff !important; }
+:deep(.el-table__body tr.current-row > td .cell-text) { color: #fff !important; }
+:deep(.el-table__body tr.current-row > td .el-tag) { color: #fff !important; }
+.no-hover-table :deep(tr:hover > td.el-table__cell) { background-color: transparent !important; }
+.no-hover-table :deep(.el-table__body tr:hover > td) { background-color: transparent !important; }
+.no-hover-table :deep(.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell) { background-color: transparent !important; }
+:deep(.el-input__inner) { padding: 0 4px; font-size: 12px; border-radius: 1px; }
 </style>
