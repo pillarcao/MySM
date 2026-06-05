@@ -15,8 +15,8 @@
       >
         <template #default="{ node, data }">
           <span class="tree-node" :class="{ 'is-record': !!data.record }">
-            <el-icon v-if="!data.record" class="group-icon"><Collection /></el-icon>
-            <el-icon v-else class="leaf-icon"><PriceTag /></el-icon>
+            <el-icon v-if="!data.record" class="group-icon"><ArrowRight /></el-icon>
+            <el-icon v-else class="leaf-icon"><CircleCheck /></el-icon>
             <span class="node-label">{{ data.label }}</span>
             <span v-if="!data.record && data.children" class="node-count">({{ data.children.length }})</span>
           </span>
@@ -30,7 +30,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
-import { Collection, PriceTag } from '@element-plus/icons-vue'
+import { ArrowRight, CircleCheck } from '@element-plus/icons-vue'
 
 const props = defineProps({
   tableId: { type: String, default: '' },
