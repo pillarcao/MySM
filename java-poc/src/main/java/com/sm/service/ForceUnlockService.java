@@ -32,17 +32,32 @@ public class ForceUnlockService {
             throw new IllegalArgumentException("表 " + tableId + " 未配置业务主键");
         }
 
-        // Build WHERE clause
-        StringBuilder where = new StringBuilder("\"REL_FLG\" = 'N'");
-        List<Object> values = new ArrayList<>();
+        // Build WHERE clause (match both REL_FLG='N' and 'Y' - any locked record)
+        StringBuilder whereN = new StringBuilder("\"REL_FLG\" = 'N'");
+        StringBuilder whereY = new StringBuilder("\"REL_FLG\" = 'Y'");
+        List<Object> keyValues = new ArrayList<>();
         for (SmFieldDef kf : keyFields) {
-            where.append(" AND \"").append(kf.getFieldName()).append("\" = ?");
-            values.add(keys.get(kf.getFieldName()));
+            String cond = " AND \"" + kf.getFieldName() + "\" = ?";
+            whereN.append(cond);
+            whereY.append(cond);
+            keyValues.add(keys.get(kf.getFieldName()));
         }
 
-        // Check record exists and is locked
+        // Check N record first, then Y
+        List<Object> nVals = new ArrayList<>(keyValues);
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT * FROM " + tableName + " WHERE " + where, values.toArray());
+                "SELECT * FROM " + tableName + " WHERE " + whereN, nVals.toArray());
+        String foundRelFlg = "N";
+        List<Object> foundVals = nVals;
+
+        if (rows.isEmpty()) {
+            List<Object> yVals = new ArrayList<>(keyValues);
+            rows = jdbcTemplate.queryForList(
+                    "SELECT * FROM " + tableName + " WHERE " + whereY, yVals.toArray());
+            foundRelFlg = "Y";
+            foundVals = yVals;
+        }
+
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("未找到该记录");
         }
@@ -54,8 +69,15 @@ public class ForceUnlockService {
         }
 
         // Clear lock fields
-        String sql = "UPDATE " + tableName + " SET \"LOCK_USER\" = '', \"LOCK_TIME\" = null WHERE " + where;
-        jdbcTemplate.update(sql, values.toArray());
+        String sql = "UPDATE " + tableName
+                + " SET \"LOCK_USER\" = '', \"LOCK_TIME\" = null WHERE \"REL_FLG\" = ?";
+        for (SmFieldDef kf : keyFields) {
+            sql += " AND \"" + kf.getFieldName() + "\" = ?";
+        }
+        List<Object> sqlVals = new ArrayList<>();
+        sqlVals.add(foundRelFlg);
+        sqlVals.addAll(keyValues);
+        jdbcTemplate.update(sql, sqlVals.toArray());
     }
 
     private String getTableName(String tableId) {

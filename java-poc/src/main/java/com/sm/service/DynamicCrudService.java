@@ -135,12 +135,19 @@ public class DynamicCrudService {
             where.append("\"").append(kf.getFieldName()).append("\" = ?");
             values.add(keys.get(kf.getFieldName()));
         }
+        // Lock either N or Y record: try N first, then Y
+        String sqlN = "UPDATE " + tableName
+                + " SET \"LOCK_USER\" = 'SYSTEM', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where;
         if (tableName.startsWith("B")) {
-            where.append(" AND \"REL_FLG\" = 'N'");
+            sqlN += " AND \"REL_FLG\" = 'N'";
         }
-
-        String sql = "UPDATE " + tableName + " SET \"LOCK_USER\" = 'SYSTEM', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where;
-        jdbcTemplate.update(sql, values.toArray());
+        int updated = jdbcTemplate.update(sqlN, values.toArray());
+        if (updated == 0 && tableName.startsWith("B")) {
+            String sqlY = "UPDATE " + tableName
+                    + " SET \"LOCK_USER\" = 'SYSTEM', \"LOCK_TIME\" = CURRENT_TIMESTAMP WHERE " + where
+                    + " AND \"REL_FLG\" = 'Y'";
+            jdbcTemplate.update(sqlY, values.toArray());
+        }
     }
 
     @Transactional
@@ -157,12 +164,19 @@ public class DynamicCrudService {
             where.append("\"").append(kf.getFieldName()).append("\" = ?");
             values.add(keys.get(kf.getFieldName()));
         }
+        // Unlock either N or Y record: try N first, then Y
+        String sqlN = "UPDATE " + tableName
+                + " SET \"LOCK_USER\" = '', \"LOCK_TIME\" = null WHERE " + where;
         if (tableName.startsWith("B")) {
-            where.append(" AND \"REL_FLG\" = 'N'");
+            sqlN += " AND \"REL_FLG\" = 'N'";
         }
-
-        String sql = "UPDATE " + tableName + " SET \"LOCK_USER\" = '', \"LOCK_TIME\" = null WHERE " + where;
-        jdbcTemplate.update(sql, values.toArray());
+        int updated = jdbcTemplate.update(sqlN, values.toArray());
+        if (updated == 0 && tableName.startsWith("B")) {
+            String sqlY = "UPDATE " + tableName
+                    + " SET \"LOCK_USER\" = '', \"LOCK_TIME\" = null WHERE " + where
+                    + " AND \"REL_FLG\" = 'Y'";
+            jdbcTemplate.update(sqlY, values.toArray());
+        }
     }
 
     private void update(String tableName, List<SmFieldDef> fields,
