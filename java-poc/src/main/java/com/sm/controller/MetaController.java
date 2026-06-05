@@ -38,4 +38,10 @@ public class MetaController {
     public List<SmDrillDef> getDrills(@PathVariable String tableId) {
         return metaService.getDrillDefs(tableId);
     }
+
+    @GetMapping("/{tableId}/tree")
+    public List<Map<String, Object>> getTree(@PathVariable String tableId,
+                                              @RequestParam(defaultValue = "ALL") String status) {
+        return metaService.getTreeData(tableId, status);
+    }
 }
