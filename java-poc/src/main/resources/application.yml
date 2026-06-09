@@ -23,3 +23,7 @@ mybatis:
 
 server:
   port: 8080
+
+sm:
+  env: MMDEV
+  version: 1.0.0

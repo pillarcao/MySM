@@ -43,9 +43,10 @@
           </div>
         </template>
         <template v-else>
-          <div class="left-panel">
+          <div class="left-panel" :style="{ width: leftWidth + 'px' }">
             <RecordList :table-id="activeTabId" :records="recordKeys" @select="onRecordSelect" @group-filter="onGroupFilter" />
           </div>
+          <div class="splitter" @mousedown="startResize('left', $event)"></div>
           <div class="center-panel">
             <div class="tab-strip" v-if="openTabs.length > 0">
               <div v-for="tab in openTabs" :key="tab.tableId" class="tab-item" :class="{ active: activeTabId === tab.tableId }" @click="switchTab(tab.tableId)">
@@ -55,10 +56,17 @@
             <DynamicTableManager v-if="activeTabId" :key="activeTabId" :table-id="activeTabId" :drill-query="drillQueries[activeTabId] || {}" :show-search="!tabInitialized[activeTabId]" @row-select="onRowSelect" @records-change="onRecordsChange" @edit-state="onEditState" @searched="onTabSearched(activeTabId)" @cell-jump="onDrillDown" />
             <div v-else class="empty-center">Select a table from the File menu</div>
           </div>
-          <div class="right-panel">
+          <div class="splitter" @mousedown="startResize('right', $event)"></div>
+          <div class="right-panel" :style="{ width: rightWidth + 'px' }">
             <RecordDetail :table-id="activeTabId" :record="selectedRecord" :fields="currentFields" :is-new="isNewRecord" @drill-down="onDrillDown" />
           </div>
         </template>
+      </div>
+      <div class="status-bar">
+        <span class="status-item">USER: {{ currentUser }}</span>
+        <span class="status-item">| ENV: {{ envInfo.env }}</span>
+        <span class="status-spacer"></span>
+        <span class="status-item">SM System v{{ envInfo.version }}</span>
       </div>
     </div>
   </div>
@@ -77,6 +85,35 @@ import EventLogView from './components/EventLogView.vue'
 
 const isLoggedIn = ref(false)
 const viewMode = ref('table')
+const leftWidth = ref(200)
+const rightWidth = ref(300)
+
+const startResize = (side, e) => {
+  e.preventDefault()
+  const startX = e.clientX
+  const startLeft = leftWidth.value
+  const startRight = rightWidth.value
+  const onMove = (ev) => {
+    const dx = ev.clientX - startX
+    if (side === 'left') {
+      leftWidth.value = Math.max(100, Math.min(500, startLeft + dx))
+    } else {
+      rightWidth.value = Math.max(100, Math.min(600, startRight - dx))
+    }
+  }
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
+const currentUser = ref('')
+const envInfo = ref({ env: '', dbUrl: '', version: '' })
 const selectedRecord = ref(null)
 const currentFields = ref([])
 const refreshKey = ref(0)
@@ -110,6 +147,20 @@ const menuFlat = computed(() => {
   return order.filter(g => groups[g]).map(g => ({ label: g, children: groups[g] }))
 })
 
+const activeTabTitle = computed(() => {
+  const tab = openTabs.value.find(t => t.tableId === activeTabId.value)
+  return tab ? tab.title : ''
+})
+const selectedKeyStr = computed(() => {
+  if (!selectedRecord.value || !currentFields.value.length) return ''
+  const keys = currentFields.value.filter(f => f.isKey === 'Y' && f.fieldName !== 'REL_FLG')
+  return keys.map(f => (selectedRecord.value[f.fieldName] || '').toString().trim()).join(' | ')
+})
+
+const fetchEnv = async () => {
+  try { envInfo.value = (await axios.get('/api/meta/env')).data } catch(e) {}
+}
+
 const fetchTables = async () => {
   try {
     tables.value = (await axios.get('/api/meta/tables')).data
@@ -123,7 +174,12 @@ const fetchTables = async () => {
     }
   }
 }
-const onLoginSuccess = () => { isLoggedIn.value = true; fetchTables().then(() => { if (tables.value[0]) { const t = tables.value[0]; openTable(t.tableId, t.usTitle || t.jpTitle || t.tableId) } }) }
+const onLoginSuccess = () => {
+  isLoggedIn.value = true
+  try { currentUser.value = JSON.parse(atob(localStorage.getItem('sm_token').split('.')[1])).sub } catch(e) { currentUser.value = '' }
+  fetchEnv()
+  fetchTables().then(() => { if (tables.value[0]) { const t = tables.value[0]; openTable(t.tableId, t.usTitle || t.jpTitle || t.tableId) } })
+}
 const handleLogout = async () => {
   try { await axios.post('/api/auth/logout') } catch(e) { /* ignore */ }
   localStorage.removeItem('sm_token'); delete axios.defaults.headers.common['Authorization']; isLoggedIn.value = false; viewMode.value = 'table'
@@ -183,7 +239,13 @@ const onMenuSelect = (index) => {
 
 onMounted(() => {
   const token = localStorage.getItem('sm_token')
-  if (token) { axios.defaults.headers.common['Authorization'] = 'Bearer ' + token; isLoggedIn.value = true; fetchTables().then(() => { if (tables.value[0]) openTable(tables.value[0].tableId, tables.value[0].usTitle || tables.value[0].jpTitle || tables.value[0].tableId) }) }
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+    isLoggedIn.value = true
+    try { currentUser.value = JSON.parse(atob(token.split('.')[1])).sub } catch(e) {}
+    fetchEnv()
+    fetchTables().then(() => { if (tables.value[0]) openTable(tables.value[0].tableId, tables.value[0].usTitle || tables.value[0].jpTitle || tables.value[0].tableId) })
+  }
 })
 </script>
 
@@ -223,10 +285,15 @@ onMounted(() => {
 .toolbar-strip { display: flex; align-items: center; gap: 3px; height: 32px; padding: 0 12px; background: var(--c-panel); border-bottom: 2px solid var(--c-primary); flex-shrink: 0; }
 .toolbar-divider { width: 1px; height: 18px; background: var(--c-border); margin: 0 8px; }
 .body-area { flex: 1; display: flex; overflow: hidden; margin: 0; min-height: 0; }
-.left-panel { width: 200px; height: calc(100vh - 66px); background: var(--c-panel); border-right: 2px solid var(--c-border); overflow-y: auto; flex-shrink: 0; }
+.left-panel { height: calc(100vh - 88px); background: var(--c-panel); overflow-y: auto; flex-shrink: 0; }
 .center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--c-bg); min-height: 0; }
 .center-panel > :last-child { flex: 1; min-height: 0; overflow: hidden; }
-.right-panel { width: 300px; height: calc(100vh - 66px); background: var(--c-panel); border-left: 2px solid var(--c-border); overflow-y: auto; flex-shrink: 0; }
+.right-panel { height: calc(100vh - 88px); background: var(--c-panel); overflow-y: auto; flex-shrink: 0; }
+.splitter { width: 4px; height: calc(100vh - 88px); background: var(--c-border); cursor: col-resize; flex-shrink: 0; transition: background .15s; }
+.splitter:hover { background: var(--c-primary); }
+.status-bar { display: flex; align-items: center; height: 22px; padding: 0 12px; background: var(--c-header); color: rgba(255,255,255,0.7); font-size: 11px; flex-shrink: 0; gap: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+.status-item { white-space: nowrap; }
+.status-spacer { flex: 1; }
 .tab-strip { display: flex; align-items: stretch; background: var(--c-border-light); border-bottom: 1px solid var(--c-border); height: 28px; padding: 0; flex-shrink: 0; overflow-x: auto; gap: 0; }
 .tab-item { display: flex; align-items: center; gap: 3px; padding: 0 12px; cursor: pointer; font-size: 11px; white-space: nowrap; color: var(--c-text-secondary); transition: all .1s; border-right: 1px solid var(--c-border); border-bottom: 2px solid transparent; }
 .tab-item:hover { background: #fff; color: var(--c-text); }
