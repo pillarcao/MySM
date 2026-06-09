@@ -41,13 +41,7 @@
           <template #header>
             <div class="header-cell">
               <span>{{ col.usTitle || col.jpTitle }}</span>
-              <el-button
-                v-if="col.refTableId && col.jumpButton === 'Y'"
-                size="small"
-                class="header-jump-btn"
-                title="Jump to {{ col.refTableId }}"
-                @click.stop="colJump(col)"
-              >→</el-button>
+              <div v-if="col.refTableId" class="header-jump" @click.stop="colJump(col)">Jump</div>
               <div v-else class="header-placeholder"></div>
             </div>
           </template>
@@ -62,6 +56,17 @@
                 style="width:100%"
                 @click.stop
               />
+              <el-select
+                v-else-if="row === editingRow && (!isKeyField(col) || isNewRow) && col.fieldType === 'SELECT' && dropdownOptions[col.fieldName]"
+                v-model="row[col.fieldName]"
+                size="small"
+                filterable
+                clearable
+                style="width:100%"
+                @click.stop
+              >
+                <el-option v-for="opt in dropdownOptions[col.fieldName]" :key="opt.FLD_VAL || opt.value" :label="(opt.FLD_VAL || opt.value) + ' - ' + (opt.FLD_STR || opt.label || '')" :value="opt.FLD_VAL || opt.value" />
+              </el-select>
               <el-input
                 v-else-if="row === editingRow && (!isKeyField(col) || isNewRow)"
                 v-model="row[col.fieldName]"
@@ -69,12 +74,6 @@
                 @click.stop
               />
               <span v-else class="cell-text">{{ formatCell(row[col.fieldName]) }}</span>
-              <el-button
-                v-if="col.refTableId && (col === displayColumns[0] || row === editingRow)"
-                size="small"
-                class="cell-ref-btn"
-                @click.stop="openRefPicker(col, row)"
-              >…</el-button>
             </div>
           </template>
         </el-table-column>
@@ -784,7 +783,8 @@ watch(selectedLeftKey, (key) => {
 .header-cell { display: flex; flex-direction: column; align-items: stretch; }
 .header-cell span { display: flex; align-items: flex-start; justify-content: center; padding: 4px 4px 2px; font-weight: 700; color: var(--c-text, #1A2233); font-size: 11px; height: 22px; text-transform: uppercase; letter-spacing: 0.3px; }
 .header-placeholder { height: 20px; border-top: 1px solid var(--c-border, #D0D5DC); background: var(--c-border-light, #E2E6EC); }
-.header-jump-btn { font-size: 11px; border-radius: 0; border: none; border-top: 1px solid var(--c-border, #D0D5DC); background: var(--c-border-light, #E2E6EC); padding: 2px 0; height: 20px; width: 100%; justify-content: center; }
+.header-jump { height: 20px; border-top: 1px solid var(--c-border, #D0D5DC); background: var(--c-border-light, #E2E6EC); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--c-primary, #2B5CE6); cursor: pointer; font-weight: 600; }
+.header-jump:hover { background: var(--c-primary, #2B5CE6); color: #fff; }
 :deep(.el-table) { border: 1px solid var(--c-border, #D0D5DC); border-radius: 0 !important; }
 :deep(.el-table__header) th { background: #E8ECF2 !important; padding: 0 !important; border-bottom: 2px solid var(--c-primary, #2B5CE6) !important; }
 :deep(.el-table__header) th .cell { padding: 0 !important; width: 100%; }

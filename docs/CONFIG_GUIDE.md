@@ -65,22 +65,42 @@
 | FIELD_TYPE | VARCHAR(20) | Y | 前端控件类型 |
 | RETRIEVAL_TABLE | VARCHAR(20) | - | 下拉数据源 |
 | CALENDAR_BUTTON | VARCHAR(1) | - | 日历按钮：`Y`/`N` |
-| JUMP_BUTTON | VARCHAR(1) | - | Jump跳转按钮：`Y`/`N`（已废弃，用REF_TABLE_ID） |
-| OPEN_BUTTON | INT | - | 0=无 1=Open按钮 2=Jump按钮 |
-| REF_TABLE_ID | VARCHAR(32) | - | 参照表ID（外键） |
-| REF_FIELD_NAME | VARCHAR(40) | - | 参照字段名 |
+| OPEN_BUTTON | INT | - | >0 时右侧面板显示 OPEN 下钻按钮（需配合 IS_DUMMY='Y' + REF_TABLE_ID） |
+| REF_TABLE_ID | VARCHAR(32) | - | 参照表ID：有值时表头显示 Jump 按钮，右侧显示 J 选择按钮 |
+| REF_FIELD_NAME | VARCHAR(40) | - | 参照字段名（Jump/选择定位用） |
 | SPECIAL_BUTTON | INT | - | 特殊按钮（保留） |
+
+### 下拉框配置（原系统 COMBO 类型映射）
+
+| 原系统 COMBO | FIELD_TYPE | RETRIEVAL_TABLE | FORMAT | 前端行为 |
+|---|---|---|---|---|
+| COMBO_SYSDATA | SELECT | SYSDATA | SYSDATA.FLD_NAME 值 | 下拉框，选项从 SYSDATA 表查询 |
+| COMBO_CODE | SELECT | BCODE | BCODE.CODE_CAT 值 | 下拉框，选项从 BCODE 表查询 |
+| COMBO_TABLE | STRING | NONE | - | 文本框 + J 按钮弹出 RefPicker |
+| COMBO_NONE | STRING | NONE | - | 普通文本输入框 |
+
+### OPEN 下钻按钮（原系统 FLD_dummy）
+
+IS_DUMMY='Y' + OPEN_BUTTON>0 + REF_TABLE_ID 配置的字段：
+- 中间表格不显示
+- 右侧面板 Data 标签：Item name 显示 `(字段名)`，Value 列显示 OPEN 按钮
+- 点击 OPEN 跳转到 REF_TABLE_ID 对应的表
+
+### 表头 Jump 按钮
+
+有 REF_TABLE_ID 的字段（非 dummy）在中间表格列头下方显示 `Jump` 按钮，点击跳转到参照表。
 
 ### IS_DUMMY vs IS_AUTO 字段分类
 
 | 属性 | IS_DUMMY='Y' | IS_AUTO='Y' |
 |------|---|---|
 | 数据库列 | 不存在（虚拟） | 存在（真实列） |
-| 用途 | UI 跳转导航按钮（如 BUSER→BPRODCODE） | 系统自动维护（REL_FLG, CRE_DATE 等） |
+| 用途 | OPEN 下钻跳转到关联表 | 系统自动维护控制字段 |
 | Save 时 | 跳过 | 后端自动填充默认值 |
 | 中间表格 | 不显示 | 显示为列 |
-| 右侧面板 | 不显示 | Property 标签页（按 PROPERTY_NO 排序） |
+| 右侧面板 | Data 标签 - OPEN 按钮 | Property 标签 - 只读表格 |
 | 可编辑 | - | 不可编辑（SYSTEM_READONLY='Y'） |
+| 典型字段 | Eqp_Mtl, RouteConnect, Q-Time | REL_FLG, COMP_FLG, CRE_DATE, OWNER |
 
 **25 个公共控制字段**（每张 B 表自动包含，通过 `tools/gen_control_fields.py` 生成）：
 

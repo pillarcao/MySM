@@ -138,8 +138,18 @@ public class MetaService {
                 .collect(Collectors.joining(" / "));
     }
     public List<Map<String, Object>> getDropdownOptions(String retrievalTable, String format) {
-        String sql = "SELECT FLD_VAL, FLD_STR FROM SYSDATA WHERE TBL_NAME = ? AND FLD_NAME = ? ORDER BY FLD_VAL";
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, retrievalTable, format);
+        String sql;
+        Object[] params;
+        if ("BCODE".equalsIgnoreCase(retrievalTable)) {
+            // COMBO_CODE: lookup from BCODE table by CODE_CAT
+            sql = "SELECT \"CODE_ID\" AS FLD_VAL, \"CODE_NAME\" AS FLD_STR FROM BCODE WHERE \"CODE_CAT\" = ? AND \"REL_FLG\" = 'Y' ORDER BY \"CODE_ID\"";
+            params = new Object[]{ format };
+        } else {
+            // COMBO_SYSDATA: lookup from SYSDATA table
+            sql = "SELECT FLD_VAL, FLD_STR FROM SYSDATA WHERE (TBL_NAME = ? OR TRIM(TBL_NAME) = '*') AND FLD_NAME = ? ORDER BY FLD_VAL";
+            params = new Object[]{ retrievalTable, format };
+        }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, params);
         for (Map<String, Object> row : rows) {
             if (row.get("FLD_VAL") instanceof String) {
                 row.put("FLD_VAL", ((String) row.get("FLD_VAL")).trim());

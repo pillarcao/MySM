@@ -145,30 +145,84 @@ VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related Table', 1);
 
 | 列 | 说明 |
 |----|------|
-| IS_KEY | 'Y'=主键 |
-| IS_DUMMY | 'Y'=虚拟字段（数据库中不存在，仅用于 UI 跳转导航） |
-| IS_AUTO | 'Y'=系统自动管理字段（数据库中存在，用户不可编辑，显示在 Property 面板） |
+| IS_KEY | 'Y'=主键，右侧面板 Item name 前加 `*` 标识 |
+| IS_DUMMY | 'Y'=虚拟字段（数据库中不存在），右侧面板 Item name 用 `(括号)` 包裹 |
+| IS_AUTO | 'Y'=系统自动管理字段（数据库中存在，用户不可编辑，显示在 Property 标签页） |
 | SYSTEM_READONLY | 'Y'=系统只读（配合 IS_AUTO 使用，前端禁止编辑） |
 | IS_SEARCH_ITEM | 'Y'=出现在中间表格列 |
-| PROPERTY_NO | >0 时显示在右侧 Property 面板，值为排序号 |
+| PROPERTY_NO | >0 时显示在右侧 Property 标签页，值为排序号 |
 | FIELD_TYPE | SELECT(下拉)/NUMBER(数字)/STRING(文本) |
-| RETRIEVAL_TABLE | SYSDATA(下拉选项) / NONE(无下拉) |
+| RETRIEVAL_TABLE | 下拉数据源：`SYSDATA` / `BCODE` / `NONE`(无下拉) |
+| FORMAT | 下拉格式键（SYSDATA 的 FLD_NAME 或 BCODE 的 CODE_CAT） |
+| OPEN_BUTTON | >0 时右侧面板显示 OPEN 下钻按钮（跳转到 REF_TABLE_ID） |
+| REF_TABLE_ID | 参照表 ID：有值时中间表头显示 Jump 按钮，右侧显示 J 选择按钮 |
+| REF_FIELD_NAME | 参照字段名（Jump/选择时用于定位） |
 | CALENDAR_BUTTON | 'Y'=日期选择器 |
-| JUMP_BUTTON | 'Y'=表头跳转按钮 |
-| REF_TABLE_ID | 参照表ID (外键关联) |
-| REF_FIELD_NAME | 参照字段名 |
 | TREE_LEVEL | >=0 时左侧面板按此字段分组显示树形结构（-1=不分组） |
+
+### 下拉框配置 (COMBO)
+
+原系统 COMBO 类型与新系统配置映射：
+
+| 原系统 | 新系统 SM_FIELD_DEF 配置 | 前端行为 |
+|--------|------------------------|----------|
+| COMBO_SYSDATA | `FIELD_TYPE='SELECT'`, `RETRIEVAL_TABLE='SYSDATA'`, `FORMAT='键名'` | 下拉框，选项来自 SYSDATA 表 |
+| COMBO_CODE | `FIELD_TYPE='SELECT'`, `RETRIEVAL_TABLE='BCODE'`, `FORMAT='CODE_CAT值'` | 下拉框，选项来自 BCODE 表 |
+| COMBO_TABLE | `FIELD_TYPE='STRING'`, `REF_TABLE_ID='TBLID_Bxxx'` | 文本框 + Jump(J) 弹出选择器 |
+| COMBO_NONE | `FIELD_TYPE='STRING'`, `RETRIEVAL_TABLE='NONE'` | 普通文本输入框 |
+
+**配置示例：**
+```sql
+-- COMBO_SYSDATA: EQP_CAT 下拉，选项来自 SYSDATA.FLD_NAME='EQP_CAT'
+UPDATE SM_FIELD_DEF SET FIELD_TYPE = 'SELECT', RETRIEVAL_TABLE = 'SYSDATA',
+  FORMAT = 'EQP_CAT' WHERE TABLE_ID = 'TBLID_BEQP' AND FIELD_NAME = 'EQP_CAT';
+
+-- COMBO_CODE: FABID 下拉，选项来自 BCODE.CODE_CAT='FABID'
+UPDATE SM_FIELD_DEF SET FIELD_TYPE = 'SELECT', RETRIEVAL_TABLE = 'BCODE',
+  FORMAT = 'FABID' WHERE TABLE_ID = 'TBLID_BEQP' AND FIELD_NAME = 'FAB_ID';
+```
+
+> 使用 `tools/gen_combo_updates.py` 可从原系统头文件批量提取 COMBO 配置。
+
+### OPEN 下钻按钮 (IS_DUMMY + OPEN_BUTTON)
+
+原系统 `FLD_dummy` 字段在新系统中通过 `IS_DUMMY='Y'` + `OPEN_BUTTON>0` + `REF_TABLE_ID` 实现：
+
+- 中间表格：不显示该字段列
+- 右侧面板 Data 标签：Item name 显示 `(字段名)`，Value 列显示 `OPEN` 按钮
+- 点击 OPEN 按钮跳转到 `REF_TABLE_ID` 对应的表
+
+**配置示例：**
+```sql
+-- Eqp_Mtl: 虚拟字段，OPEN 按钮跳转到 BEQP_MTL 表
+INSERT INTO SM_FIELD_DEF (...) VALUES (
+  'TBLID_BEQP', 'Eqp_Mtl', '装置ﾏﾃﾘｱﾙ', 'Eqp Material',
+  'STRING', 1, 'N', 'N', 'Y', 'N',  -- IS_DUMMY='Y'
+  28, -1, -1, 0, 0,
+  'N', 'N', 'N', 'STRING', 1,
+  'N', 0, 'N', 'N', 'N', 'NONE', NULL, NULL, NULL, NULL,
+  'N', 'N', 1,                       -- OPEN_BUTTON=1
+  'TBLID_BEQP_MTL', 'EQP_ID', 0     -- REF_TABLE_ID + REF_FIELD
+);
+```
+
+> 使用 `tools/regen_field_def.py` 可从原系统头文件完整重新生成所有字段定义（含 dummy 字段）。
+
+### 表头 Jump 按钮
+
+有 `REF_TABLE_ID` 的字段在中间表格的列头下方显示 `Jump` 按钮，点击跳转到参照表。
+右侧面板中同样显示 `J` 按钮用于弹出参照选择器（RefPicker）。
 
 ### IS_DUMMY vs IS_AUTO 区别
 
 | | IS_DUMMY='Y' | IS_AUTO='Y' |
 |---|---|---|
 | 数据库中存在 | 否（虚拟字段） | 是（真实列） |
-| 用途 | UI 跳转导航按钮 | 系统自动维护的控制字段 |
+| 用途 | OPEN 下钻跳转到关联表 | 系统自动维护的控制字段 |
 | Save 时 | 跳过，不写 SQL | 跳过用户输入，后端自动填值 |
 | 中间表格 | 不显示 | 显示为列 |
-| 右侧面板 | 不显示 | Property 标签页显示 |
-| 典型字段 | PROD_CODE_CAT, CODE_CAT | REL_FLG, COMP_FLG, CRE_DATE, OWNER, LAST_* |
+| 右侧面板 | Data 标签 - OPEN 按钮 | Property 标签 - 只读表格 |
+| 典型字段 | Eqp_Mtl, RouteConnect, Q-Time | REL_FLG, COMP_FLG, CRE_DATE, OWNER, LAST_* |
 
 ### 25 个公共控制字段 (IS_AUTO='Y')
 
@@ -189,6 +243,16 @@ VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related Table', 1);
 | LAST_DATE1~5 | 操作时间（5 层 shift-register） | - |
 | LAST_ACT1~5 | 操作类型（5 层） | - |
 | LAST_USER1~5 | 操作者（5 层） | - |
+
+### 工具脚本
+
+| 脚本 | 用途 |
+|------|------|
+| `tools/regen_field_def.py` | 从 SmTableInformation*.h 完整重新生成 SM_FIELD_DEF（含 dummy 字段） |
+| `tools/gen_control_fields.py` | 为所有表生成 25 个公共控制字段配置 |
+| `tools/gen_combo_updates.py` | 从原系统提取 COMBO_SYSDATA/COMBO_CODE 配置并生成 UPDATE |
+| `tools/parse_ddl.py` | 从 DB2 DDL 生成 H2 建表语句 |
+| `tools/parse_checks.py` | 从 wdbtbl.h 提取校验规则 |
 
 ### 状态流转
 
