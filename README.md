@@ -146,9 +146,11 @@ VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related Table', 1);
 | 列 | 说明 |
 |----|------|
 | IS_KEY | 'Y'=主键 |
-| IS_DUMMY | 'Y'=虚拟字段(不存储) |
-| IS_SEARCH_ITEM | 'Y'=出现在查询条件栏 |
-| IS_AUTO | 'Y'=自动生成字段(不显示) |
+| IS_DUMMY | 'Y'=虚拟字段（数据库中不存在，仅用于 UI 跳转导航） |
+| IS_AUTO | 'Y'=系统自动管理字段（数据库中存在，用户不可编辑，显示在 Property 面板） |
+| SYSTEM_READONLY | 'Y'=系统只读（配合 IS_AUTO 使用，前端禁止编辑） |
+| IS_SEARCH_ITEM | 'Y'=出现在中间表格列 |
+| PROPERTY_NO | >0 时显示在右侧 Property 面板，值为排序号 |
 | FIELD_TYPE | SELECT(下拉)/NUMBER(数字)/STRING(文本) |
 | RETRIEVAL_TABLE | SYSDATA(下拉选项) / NONE(无下拉) |
 | CALENDAR_BUTTON | 'Y'=日期选择器 |
@@ -156,6 +158,37 @@ VALUES ('TBLID_BROUTE', 'TBLID_BXXXX', 'Related Table', 1);
 | REF_TABLE_ID | 参照表ID (外键关联) |
 | REF_FIELD_NAME | 参照字段名 |
 | TREE_LEVEL | >=0 时左侧面板按此字段分组显示树形结构（-1=不分组） |
+
+### IS_DUMMY vs IS_AUTO 区别
+
+| | IS_DUMMY='Y' | IS_AUTO='Y' |
+|---|---|---|
+| 数据库中存在 | 否（虚拟字段） | 是（真实列） |
+| 用途 | UI 跳转导航按钮 | 系统自动维护的控制字段 |
+| Save 时 | 跳过，不写 SQL | 跳过用户输入，后端自动填值 |
+| 中间表格 | 不显示 | 显示为列 |
+| 右侧面板 | 不显示 | Property 标签页显示 |
+| 典型字段 | PROD_CODE_CAT, CODE_CAT | REL_FLG, COMP_FLG, CRE_DATE, OWNER, LAST_* |
+
+### 25 个公共控制字段 (IS_AUTO='Y')
+
+每张 B 表自动包含以下 25 个控制字段，通过 `tools/gen_control_fields.py` 批量生成配置：
+
+| 字段 | 说明 | 中间表格显示 |
+|------|------|:---:|
+| REL_FLG | 发布状态 N=编辑 / Y=已发布 | Yes |
+| COMP_FLG | 编辑完成 N=未完成 / Y=已完成 | Yes |
+| CRE_DATE | 创建时间 | Yes |
+| CRE_USER | 创建者 | - |
+| OWNER | 记录所有者 | Yes |
+| OWNERG | 所有者组 | - |
+| PERMISSION | 权限 | - |
+| LOCK_USER | 锁定者 | - |
+| LOCK_TIME | 锁定时间 | - |
+| COMMENT | 备注 | - |
+| LAST_DATE1~5 | 操作时间（5 层 shift-register） | - |
+| LAST_ACT1~5 | 操作类型（5 层） | - |
+| LAST_USER1~5 | 操作者（5 层） | - |
 
 ### 状态流转
 

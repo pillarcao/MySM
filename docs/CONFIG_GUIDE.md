@@ -55,8 +55,13 @@
 | DB_LENGTH | INT | Y | 字段长度 |
 | IS_KEY | VARCHAR(1) | Y | 是否主键：`Y`/`N` |
 | NOT_BLANK | VARCHAR(1) | Y | 是否非空：`Y`/`N` |
-| IS_DUMMY | VARCHAR(1) | Y | 是否虚拟字段：`Y`/`N`（虚拟字段不存储不显示） |
-| IS_SEARCH_ITEM | VARCHAR(1) | Y | 是否检索项：`Y`/`N`（出现在搜索对话框） |
+| IS_DUMMY | VARCHAR(1) | Y | 虚拟字段：`Y`=数据库中不存在，仅 UI 导航用；`N`=真实字段 |
+| IS_SEARCH_ITEM | VARCHAR(1) | Y | `Y`=出现在中间表格列和搜索对话框 |
+| IS_AUTO | VARCHAR(1) | Y | `Y`=系统自动管理字段（用户不可编辑，Save 时后端自动填值） |
+| SYSTEM_READONLY | VARCHAR(1) | - | `Y`=前端只读（配合 IS_AUTO 使用） |
+| PROPERTY_NO | INT | - | >0 时显示在右侧 Property 面板，值为排序号 |
+| SORT_NO | INT | - | 字段在中间表格中的列排序号 |
+| TREE_LEVEL | INT | - | >=0 时左侧面板按此字段分组显示（-1=不分组） |
 | FIELD_TYPE | VARCHAR(20) | Y | 前端控件类型 |
 | RETRIEVAL_TABLE | VARCHAR(20) | - | 下拉数据源 |
 | CALENDAR_BUTTON | VARCHAR(1) | - | 日历按钮：`Y`/`N` |
@@ -65,6 +70,25 @@
 | REF_TABLE_ID | VARCHAR(32) | - | 参照表ID（外键） |
 | REF_FIELD_NAME | VARCHAR(40) | - | 参照字段名 |
 | SPECIAL_BUTTON | INT | - | 特殊按钮（保留） |
+
+### IS_DUMMY vs IS_AUTO 字段分类
+
+| 属性 | IS_DUMMY='Y' | IS_AUTO='Y' |
+|------|---|---|
+| 数据库列 | 不存在（虚拟） | 存在（真实列） |
+| 用途 | UI 跳转导航按钮（如 BUSER→BPRODCODE） | 系统自动维护（REL_FLG, CRE_DATE 等） |
+| Save 时 | 跳过 | 后端自动填充默认值 |
+| 中间表格 | 不显示 | 显示为列 |
+| 右侧面板 | 不显示 | Property 标签页（按 PROPERTY_NO 排序） |
+| 可编辑 | - | 不可编辑（SYSTEM_READONLY='Y'） |
+
+**25 个公共控制字段**（每张 B 表自动包含，通过 `tools/gen_control_fields.py` 生成）：
+
+```
+REL_FLG, COMP_FLG, CRE_DATE, CRE_USER, OWNER, OWNERG, PERMISSION,
+LOCK_USER, LOCK_TIME, COMMENT,
+LAST_DATE1~5, LAST_ACT1~5, LAST_USER1~5
+```
 
 ### SM_CHECK_DEF（校验规则）
 

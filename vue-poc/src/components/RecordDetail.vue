@@ -125,37 +125,16 @@ const buildKeyQuery = () => {
 }
 
 const dataFields = computed(() => {
-  return props.fields.filter(f => f.isDummy === 'N')
+  return props.fields.filter(f => f.isDummy === 'N' && f.isAuto !== 'Y')
 })
 
-const propertyLabels = [
-  { key: 'REL_FLG', label: '状态' },
-  { key: 'COMP_FLG', label: '编辑完成' },
-  { key: 'CRE_DATE', label: '创建日时' },
-  { key: 'CRE_USER', label: '创建者' },
-  { key: 'OWNER', label: '所有者' },
-  { key: 'OWNERG', label: '所有组' },
-  { key: 'PERMISSION', label: '权限' },
-  { key: 'LOCK_USER', label: '锁定者' },
-  { key: 'LOCK_TIME', label: '锁定时间' },
-  { key: 'LAST_DATE1', label: 'Release时间' },
-  { key: 'LAST_ACT1', label: 'Release操作' },
-  { key: 'LAST_USER1', label: 'Release人员' },
-  { key: 'LAST_DATE2', label: 'EditComp时间' },
-  { key: 'LAST_ACT2', label: 'EditComp操作' },
-  { key: 'LAST_USER2', label: 'EditComp人员' },
-  { key: 'LAST_DATE3', label: 'Create时间' },
-  { key: 'LAST_ACT3', label: 'Create操作' },
-  { key: 'LAST_USER3', label: 'Create人员' },
-  { key: 'LAST_DATE4', label: 'Save时间' },
-  { key: 'LAST_ACT4', label: 'Save操作' },
-  { key: 'LAST_USER4', label: 'Save人员' },
-  { key: 'LAST_DATE5', label: '历史5时间' },
-  { key: 'LAST_ACT5', label: '历史5操作' },
-  { key: 'LAST_USER5', label: '历史5人员' },
-]
-
-const propertyFields = computed(() => propertyLabels.filter(p => props.record && p.key in props.record))
+const propertyFields = computed(() => {
+  if (!props.record) return []
+  return props.fields
+    .filter(f => f.isAuto === 'Y' && f.fieldName in props.record)
+    .sort((a, b) => (a.propertyNo || 0) - (b.propertyNo || 0))
+    .map(f => ({ key: f.fieldName, label: f.usTitle || f.jpTitle || f.fieldName }))
+})
 
 const isKeyField = (f) => f.isKey === 'Y'
 

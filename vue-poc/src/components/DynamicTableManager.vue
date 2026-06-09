@@ -78,41 +78,19 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column width="60" prop="COMP_FLG">
+        <el-table-column
+          v-for="col in controlColumns"
+          :key="'ctrl_' + col.fieldName"
+          :prop="col.fieldName"
+          :width="col.fieldLength > 20 ? 180 : (col.usTitle || col.fieldName).length * 10 + 20"
+        >
           <template #header>
             <div class="header-cell">
-              <span>Comp</span>
+              <span>{{ col.usTitle || col.jpTitle }}</span>
               <div class="header-placeholder"></div>
             </div>
           </template>
-          <template #default="{ row }">{{ (row.COMP_FLG||'').trim() }}</template>
-        </el-table-column>
-        <el-table-column width="60" prop="REL_FLG">
-          <template #header>
-            <div class="header-cell">
-              <span>Rel</span>
-              <div class="header-placeholder"></div>
-            </div>
-          </template>
-          <template #default="{ row }">{{ (row.REL_FLG||'').trim() }}</template>
-        </el-table-column>
-        <el-table-column width="80" prop="OWNER">
-          <template #header>
-            <div class="header-cell">
-              <span>Owner</span>
-              <div class="header-placeholder"></div>
-            </div>
-          </template>
-          <template #default="{ row }">{{ formatCell(row.OWNER) }}</template>
-        </el-table-column>
-        <el-table-column width="180" prop="CRE_DATE">
-          <template #header>
-            <div class="header-cell">
-              <span>Created</span>
-              <div class="header-placeholder"></div>
-            </div>
-          </template>
-          <template #default="{ row }">{{ formatCell(row.CRE_DATE) }}</template>
+          <template #default="{ row }">{{ formatCell(row[col.fieldName]) }}</template>
         </el-table-column>
       </el-table>
     </div>
@@ -167,7 +145,8 @@ const isNewRow = ref(false)
 
 const tableTitle = computed(() => config.value.table?.usTitle || config.value.table?.jpTitle || props.tableId)
 const keyFields = computed(() => config.value.fields.filter(f => f.isKey==='Y' && f.fieldName!=='REL_FLG'))
-const displayColumns = computed(() => config.value.fields.filter(f => f.isDummy==='N' && !hiddenCols.value.has(f.fieldName)))
+const displayColumns = computed(() => config.value.fields.filter(f => f.isDummy==='N' && f.isAuto!=='Y' && !hiddenCols.value.has(f.fieldName)))
+const controlColumns = computed(() => config.value.fields.filter(f => f.isAuto==='Y').sort((a,b) => (a.sortNo||0) - (b.sortNo||0)))
 const formFields = computed(() => config.value.fields.filter(f => f.isDummy==='N'))
 
 const canEditComp = computed(() => {
